@@ -2299,14 +2299,40 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Recurring: repeats, installments, subscriptions ===== */
   var rType = "installment", recBusy = false, rArm = null;
   var recDlg = $("#recDlg");
-  function openRecDlg() {
+  var recEditId = null;
+  function openRecDlg(editId) {
     if (!state.wallets.length) { openAcctDlg(null); return; }
+    var er = null; if (typeof editId === "string") state.recs.forEach(function (x) { if (x.id === editId) er = x; });
+    if (er && !wmap[er.wallet]) er = null;
+    recEditId = er ? er.id : null;
     $("#rAcct").innerHTML = state.wallets.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + " (" + x.cur + ")</option>"; }).join("");
-    var pick = (state.lastWallet && isLocalW(state.lastWallet) ? state.lastWallet : "") || (state.wallets.filter(isCredit)[0] || state.wallets[0]).id;
+    var pick = er ? er.wallet : (state.lastWallet && isLocalW(state.lastWallet) ? state.lastWallet : "") || (state.wallets.filter(isCredit)[0] || state.wallets[0]).id;
     dlgId = pick; $("#rAcct").value = pick;
-    setRType(rType);
+    setRType(er ? er.type : rType);
+    $("#recDlgT").textContent = er ? "Edit " + RT_LABEL[er.type].toLowerCase() : "New recurring";
+    $("#rTabs").hidden = !!er;
+    if (er) { fillRec(er); $("#rSave").textContent = "Save changes"; }
     if (!recDlg.open) recDlg.showModal();
-    $("#rName").focus();
+    if (!er) $("#rName").focus();
+  }
+  /* fills the form from an existing recurring item (the type itself can't be changed) */
+  function fillRec(r) {
+    var w = wmap[r.wallet], ins = r.type === "installment";
+    $("#rName").value = r.name || ""; $("#rAmt").value = ins ? (r.total || "") : (r.amount || "");
+    $("#rStart").value = r.start || todayStr; $("#rCat").value = r.cat || ""; $("#rSub").value = r.sub || "";
+    $("#rPayee").value = r.type === "subscription" ? "" : (r.payee || "");
+    if (!ins) {
+      $("#rFreq").value = r.freq || "monthly";
+      if (r.type === "repeat") { $("#rKind").value = r.kind === "in" ? "in" : "out"; $("#rEnd").value = r.end || ""; }
+    } else {
+      var full = r.mode !== "amortize";
+      $("#rMonths").value = r.count || ""; $("#rFee").value = r.fee ? r.fee : ""; $("#rStmt").value = r.stmt || (w && w.stmt) || "";
+      $("#rMode").value = full ? "full" : "amortize"; $("#rFull").setAttribute("aria-checked", String(full));
+      $("#rFullH").textContent = full ? "On: the whole amount is charged on the purchase date" : "Off: billed monthly on each statement date";
+      $("#rRateType").value = r.rateType || "none"; $("#rRate").value = r.rate ? r.rate : "";
+      $("#rCharge").value = r.charge ? r.charge : ""; $("#rChargeName").value = r.chargeName || "";
+    }
+    refreshSub("#rCat", "#rSubList", rKindNow()); updateRHint();
   }
   function closeRecDlg() { if (recDlg.open) recDlg.close(); }
   recDlg.addEventListener("close", function () { dlgId = null; });
@@ -2506,7 +2532,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         if (on && up) { var m = conv(r.amount * recMonthly(r), w.cur); if (r.type === "subscription") { T.sub += m; T.subN++; } else if (r.kind === "in") T.inc += m; else T.bill += m; }
       }
       if (!on) sub += " · paused";
-      G[r.type].push({ k: (on ? "0" : "1") + (nk || "9999-99-99") + "|" + String(r.name || r.cat || "").toLowerCase(), h: '<li><div><div class="sym">' + title + '</div><div class="note">' + esc(w.name + " · " + sub) + '</div></div><span class="amt ' + ac + '">' + esc(amt) + '</span><span class="acts"><button type="button" class="ed" data-rpause="' + esc(r.id) + '">' + (on ? "Pause" : "Resume") + '</button><button type="button" class="del" data-rdel="' + esc(r.id) + '">Delete</button>' + (np ? '<button type="button" class="del" data-rdel="' + esc(r.id) + '" data-rwipe="1">Delete + ' + np + ' posted</button>' : "") + '</span></li>' });
+      G[r.type].push({ k: (on ? "0" : "1") + (nk || "9999-99-99") + "|" + String(r.name || r.cat || "").toLowerCase(), h: '<li><div><div class="sym">' + title + '</div><div class="note">' + esc(w.name + " · " + sub) + '</div></div><span class="amt ' + ac + '">' + esc(amt) + '</span><span class="acts"><button type="button" class="ed" data-redit="' + esc(r.id) + '">Edit</button><button type="button" class="ed" data-rpause="' + esc(r.id) + '">' + (on ? "Pause" : "Resume") + '</button><button type="button" class="del" data-rdel="' + esc(r.id) + '">Delete</button>' + (np ? '<button type="button" class="del" data-rdel="' + esc(r.id) + '" data-rwipe="1">Delete + ' + np + ' posted</button>' : "") + '</span></li>' });
     });
     Object.keys(G).forEach(function (t) { G[t].sort(function (a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : 0; }); });
     host.innerHTML = [["installment", "Installments"], ["subscription", "Subscriptions"], ["repeat", "Repeats"]].map(function (g) {
@@ -2529,6 +2555,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   $("#rTabs").addEventListener("click", function (e) { var b = e.target.closest("[data-rt]"); if (b) setRType(b.getAttribute("data-rt")); });
   $("#recView").addEventListener("click", function (e) {
+    var eb = e.target.closest("[data-redit]"); if (eb) { openRecDlg(eb.getAttribute("data-redit")); return; }
     var pb = e.target.closest("[data-rpause]"), db = e.target.closest("[data-rdel]");
     if (pb) {
       var id = pb.getAttribute("data-rpause"), r = null; state.recs.forEach(function (x) { if (x.id === id) r = x; }); if (!r) return;
@@ -2583,6 +2610,16 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       if (rep) { if (end && end < start) { err.textContent = "The end date must be after the start date."; $("#rEnd").focus(); return; } o.end = end || ""; }
     }
     err.textContent = ""; $("#rSave").disabled = true;
+    if (recEditId) {
+      /* edit: keep what was already posted (active / last / createdAt); changes apply to charges not yet posted */
+      delete o.active; delete o.last; delete o.createdAt; delete o.type;
+      patch("r", recEditId, o).then(function (ok) {
+        $("#rSave").disabled = false;
+        if (!ok) { err.textContent = "Could not save. Try again."; return; }
+        closeRecDlg(); setStatus("Updated " + RT_LABEL[rType].toLowerCase() + ".");
+      });
+      return;
+    }
     put("r", o).then(function (id) {
       $("#rSave").disabled = false;
       if (!id) { err.textContent = "Could not save. Try again."; return; }
