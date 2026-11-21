@@ -767,19 +767,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 /* Bottom sheets on phones (respects the Dynamic Island and the home bar) */
 @keyframes sheetin { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes bdin { from { opacity: 0; } to { opacity: 1; } }
-@media (max-width: 699px) {
-  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg {
-    inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 100%; height: fit-content;
-    border-radius: 24px 24px 0 0; border-bottom: 0;
-    padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px));
-    max-height: calc(var(--vvh, 100dvh) - 12px - env(safe-area-inset-top, 0px));
-  }
-  #pickDlg { max-height: calc(var(--vvh, 100dvh) - 12px - env(safe-area-inset-top, 0px)); }
-  dialog .dlghead { top: 0; margin: 0 -18px 12px; padding: 24px 18px 10px; border-radius: 24px 24px 0 0; }
-  dialog .dlghead::before { content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px; border-radius: 5px; background: var(--hair); }
-  #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open] { animation: sheetin 0.34s cubic-bezier(0.2, 0.85, 0.25, 1); }
-  #acctDlg[open]::backdrop, #txDlg[open]::backdrop, #recDlg[open]::backdrop, #catDlg[open]::backdrop, #pickDlg[open]::backdrop { animation: bdin 0.3s ease-out; }
-}
 @media (prefers-reduced-motion: reduce) { #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open], dialog[open]::backdrop { animation: none !important; } }
 
 /* Swipe left on a transaction to delete (touch) */
@@ -812,13 +799,22 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   #dAccts .acct .as, #dAccts .acct .ao { font-size: 11px; }
 }
 
-/* Phone sheets: fixed height. Closed keyboard = sit above Safari's toolbar; open keyboard = pin to top of the visible area */
+
+/* ===== Phone bottom sheets: sit on top of the keyboard, clear the browser toolbar, swipe down to close ===== */
+:root { --kb: 0px; --sbar: 0px; }
+@media (max-width: 699px) and (display-mode: browser) { :root { --sbar: 76px; } :root.kbopen { --sbar: 0px; } }
 @media (max-width: 699px) {
-  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { inset: auto 0 var(--bar, 0px) 0; }
-  #acctDlg, #txDlg, #recDlg { height: var(--sheet-h, 62dvh); max-height: var(--sheet-h, 62dvh); padding-top: 0; }
-  .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg { inset: calc(var(--vvt, 0px) + var(--gt, 10px)) 0 auto 0; border-radius: 24px; }
-  .kbd #catDlg, .kbd #pickDlg { inset: auto 0 var(--kb, 0px) 0; border-radius: 24px; max-height: calc(var(--vvh, 100dvh) - 20px); }
-  dialog .dlghead { top: 0; margin-top: 0; }
+  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg {
+    inset: auto 0 var(--kb, 0px) 0; margin: 0 auto; width: 100%; max-width: 560px; height: auto;
+    max-height: calc(var(--vvh, 100dvh) - env(safe-area-inset-top, 0px) - 12px);
+    border-radius: 22px 22px 0 0; border-bottom: 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--sbar, 0px));
+    scroll-padding-bottom: 24px; overscroll-behavior: contain; will-change: transform;
+  }
+  #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open] { animation: sheetin 0.26s cubic-bezier(0.2, 0.85, 0.25, 1); }
+  dialog[open]::backdrop { animation: bdin 0.2s ease-out; }
+  dialog .dlghead { padding-top: 22px; }
+  dialog .dlghead::before { content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: var(--muted); opacity: 0.5; }
 }
 </style>
 <script>
@@ -4090,29 +4086,65 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
   /* track the real visible height (iOS toolbars / keyboard) so popups never exceed the screen */
   (function () {
-    var vv = window.visualViewport, kbRef = 336;
-    try { kbRef = Number(localStorage.getItem("wl-kbh")) || 336; } catch (x) {}
-    var standalone = !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches));
-    function safeTop() { var p = document.createElement("div"); p.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)"; document.body.appendChild(p); var v = p.offsetHeight; p.remove(); return v; }
+    var vv = window.visualViewport;
+    var root = document.documentElement;
     function set() {
-      var h = vv ? vv.height : window.innerHeight, root = document.documentElement, top = vv ? vv.offsetTop : 0;
-      var kb = vv ? Math.max(0, window.innerHeight - vv.height - top) : 0;
-      var open = kb > 60, gt = safeTop() + 10;
-      if (open) { kbRef = Math.round(kb); try { localStorage.setItem("wl-kbh", String(kbRef)); } catch (x) {} }
+      var h = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0;
+      var kb = Math.max(0, window.innerHeight - h - top), open = kb > 80;
       root.style.setProperty("--vvh", h + "px");
-      root.style.setProperty("--vvt", top + "px");
-      root.style.setProperty("--gt", gt + "px");
-      root.style.setProperty("--bar", (standalone ? 0 : 88) + "px");
       root.style.setProperty("--kb", (open ? kb : 0) + "px");
-      root.style.setProperty("--sheet-h", Math.max(360, Math.min(680, window.innerHeight - gt - kbRef - 52)) + "px");
-      root.classList.toggle("kbd", open);
+      root.classList.toggle("kbopen", open);
     }
-    document.addEventListener("focusin", function (e) {
-      var el = e.target, dlg = el.closest && el.closest("dialog");
-      if (!dlg || !/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
-      setTimeout(function () { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 320);
-    });
     set(); if (vv) { vv.addEventListener("resize", set); vv.addEventListener("scroll", set); } window.addEventListener("resize", set);
+    /* keep the field you tapped visible above the keyboard */
+    document.addEventListener("focusin", function (e) {
+      var t = e.target; if (!t || !t.closest || !t.closest("dialog") || !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      setTimeout(function () { try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 320);
+    });
+  })();
+
+  /* swipe a popup down to close it (drag the top bar, or pull down when the popup is scrolled to the top) */
+  (function () {
+    var mq = window.matchMedia("(max-width: 699px)");
+    Array.prototype.slice.call(document.querySelectorAll("dialog")).forEach(function (d) {
+      var sx = 0, sy = 0, st = 0, dy = 0, mode = 0, fromHead = false; /* mode: 0 idle, 1 undecided, 2 dragging, 3 ignored */
+      function reset(animate) {
+        d.style.transition = animate ? "transform 0.2s ease-out" : "";
+        d.style.transform = "";
+        if (animate) setTimeout(function () { d.style.transition = ""; }, 220);
+      }
+      function dismiss() {
+        var b = d.querySelector('.dlghead [aria-label="Close"]');
+        try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (x) {}
+        d.style.transition = "transform 0.2s ease-in"; d.style.transform = "translateY(110%)";
+        setTimeout(function () { if (b) b.click(); else if (d.open) d.close(); reset(false); }, 190);
+      }
+      d.addEventListener("touchstart", function (e) {
+        mode = 0; if (!mq.matches || !d.open || e.touches.length !== 1) return;
+        var t = e.target; fromHead = !!(t.closest && t.closest(".dlghead") && !t.closest("button, input, select"));
+        if (!fromHead && (d.scrollTop > 0 || (t.closest && t.closest("input, textarea, select")))) return;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); dy = 0; mode = 1;
+      }, { passive: true });
+      d.addEventListener("touchmove", function (e) {
+        if (mode === 0 || mode === 3) return;
+        var x = e.touches[0].clientX, y = e.touches[0].clientY, mx = x - sx, my = y - sy;
+        if (mode === 1) {
+          if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+          if (my > 0 && Math.abs(my) > Math.abs(mx) && (fromHead || d.scrollTop <= 0)) { mode = 2; d.style.transition = "none"; }
+          else { mode = 3; return; }
+        }
+        dy = Math.max(0, my);
+        if (e.cancelable) e.preventDefault();
+        d.style.transform = "translateY(" + dy + "px)";
+      }, { passive: false });
+      function end() {
+        if (mode !== 2) { mode = 0; return; }
+        var v = dy / Math.max(1, Date.now() - st); mode = 0;
+        if (dy > 120 || (dy > 40 && v > 0.6)) dismiss(); else reset(true);
+      }
+      d.addEventListener("touchend", end); d.addEventListener("touchcancel", end);
+      d.addEventListener("close", function () { reset(false); });
+    });
   })();
 </script>
 <script>
