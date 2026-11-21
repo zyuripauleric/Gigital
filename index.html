@@ -617,7 +617,8 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 #dAccts.sorting .acct:not(.dragging):nth-child(2n) { animation-delay: -.25s; }
 #dAccts.sorting .acct:not(.dragging):nth-child(3n) { animation-duration: .6s; }
 @media (prefers-reduced-motion: reduce) { #dAccts.sorting .acct:not(.dragging) { animation: none; } }
-/* phones: currency picker and date range share one row */
+#dashView > #rangeHost { margin-bottom: 14px; }
+/* phones: date range chip */
 .chiprow { display: contents; }
 @media (max-width: 699px) {
   .chiprow { display: flex; gap: 8px; align-items: stretch; }
@@ -740,8 +741,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         </span>
       </button>
       <button type="button" class="btn" id="qaWallet">+ Wallet</button>
-      <label class="sr" for="disp">Show amounts in</label>
-      <select id="disp"></select>
     </div>
     <div class="ledgerbar">
       <label class="sr" for="ledgerSel">Ledger</label><select id="ledgerSel"></select>
@@ -757,48 +756,49 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     <div class="pills" id="pills" aria-label="Snapshot"></div>
   </header>
 
-  <div id="rangeHost" class="rc">
-    <div class="chiprow" id="chipRow">
-    <button type="button" class="btn rchip" id="rangeChip" aria-expanded="false" aria-controls="rangeBar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="rangeChipTxt">This month</span><span class="rcaret" aria-hidden="true">▾</span></button>
-    </div>
-    <div class="rangebar" id="rangeBar">
-      <div class="field" hidden><label for="rFrom">From</label><input type="date" id="rFrom"></div>
-      <div class="field" hidden><label for="rTo">To</label><input type="date" id="rTo"></div>
-      <div class="presets" role="group" aria-label="Quick ranges">
-        <button type="button" class="btn sm" data-preset="month" aria-pressed="false">This month</button>
-        <button type="button" class="btn sm" data-preset="lastmonth" aria-pressed="false">Last month</button>
-        <button type="button" class="btn sm" data-preset="d30" aria-pressed="false">Last 30 days</button>
-        <button type="button" class="btn sm" data-preset="ytd" aria-pressed="false">Year to date</button>
-        <button type="button" class="btn sm" data-preset="all" aria-pressed="false">All time</button>
-      </div>
-      <div class="rexp">
-        <div class="dd" id="ddIO">
-          <button type="button" class="btn primary sm" id="ddBtn" aria-haspopup="menu" aria-expanded="false">Import / Export <span aria-hidden="true">▾</span></button>
-          <div class="ddmenu" id="ddMenu" role="menu" hidden>
-            <button type="button" role="menuitem" id="rExportX">Export Excel</button>
-            <button type="button" role="menuitem" id="rImport">Bulk upload (CSV or Excel)</button>
-            <button type="button" role="menuitem" id="rTemplate">Download upload template</button>
-            <button type="button" role="menuitem" id="rBackup">Back up everything (file)</button>
-            <button type="button" role="menuitem" id="rRestore">Restore from backup</button>
-          </div>
-        </div>
-        <input type="file" id="rImportFile" accept=".csv,.xlsx,.xls,text/csv" hidden>
-        <input type="file" id="rRestoreFile" accept=".json,application/json" hidden>
-      </div>
-    </div>
-    <p class="err" id="rErr" role="alert"></p>
-    <p class="status" id="rMsg" role="status"></p>
-  </div>
 
   <div class="navrow">
     <div class="tabs" role="group" aria-label="View">
       <button type="button" id="tabDash" aria-pressed="true" title="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="lb">Dashboard</span></button>
+      <button type="button" id="tabRep" aria-pressed="false" title="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span class="lb">Reports</span></button>
       <button type="button" id="tabRec" aria-pressed="false" title="Recurring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="lb">Recurring</span></button>
       <button type="button" id="tabRates" aria-pressed="false" title="Rates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span class="lb">Rates</span></button>
     </div>
   </div>
 
   <div class="view" id="dashView">
+    <div id="rangeHost" class="rc" hidden>
+      <div class="chiprow" id="chipRow">
+      <button type="button" class="btn rchip" id="rangeChip" aria-expanded="false" aria-controls="rangeBar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="rangeChipTxt">This month</span><span class="rcaret" aria-hidden="true">▾</span></button>
+      </div>
+      <div class="rangebar" id="rangeBar">
+        <div class="field" hidden><label for="rFrom">From</label><input type="date" id="rFrom"></div>
+        <div class="field" hidden><label for="rTo">To</label><input type="date" id="rTo"></div>
+        <div class="presets" role="group" aria-label="Quick ranges">
+          <button type="button" class="btn sm" data-preset="month" aria-pressed="false">This month</button>
+          <button type="button" class="btn sm" data-preset="lastmonth" aria-pressed="false">Last month</button>
+          <button type="button" class="btn sm" data-preset="d30" aria-pressed="false">Last 30 days</button>
+          <button type="button" class="btn sm" data-preset="ytd" aria-pressed="false">Year to date</button>
+          <button type="button" class="btn sm" data-preset="all" aria-pressed="false">All time</button>
+        </div>
+        <div class="rexp">
+          <div class="dd" id="ddIO">
+            <button type="button" class="btn primary sm" id="ddBtn" aria-haspopup="menu" aria-expanded="false">Import / Export <span aria-hidden="true">▾</span></button>
+            <div class="ddmenu" id="ddMenu" role="menu" hidden>
+              <button type="button" role="menuitem" id="rExportX">Export Excel</button>
+              <button type="button" role="menuitem" id="rImport">Bulk upload (CSV or Excel)</button>
+              <button type="button" role="menuitem" id="rTemplate">Download upload template</button>
+              <button type="button" role="menuitem" id="rBackup">Back up everything (file)</button>
+              <button type="button" role="menuitem" id="rRestore">Restore from backup</button>
+            </div>
+          </div>
+          <input type="file" id="rImportFile" accept=".csv,.xlsx,.xls,text/csv" hidden>
+          <input type="file" id="rRestoreFile" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <p class="err" id="rErr" role="alert"></p>
+      <p class="status" id="rMsg" role="status"></p>
+    </div>
     <div class="dashx">
         <div class="dbar" hidden><div class="dtools"><button type="button" class="btn sm" id="dCust" aria-pressed="false">Customize layout</button><button type="button" class="btn sm" id="dReset" hidden>Reset layout</button></div></div>
         <p class="hint" id="dHint" hidden>Drag a panel's pill to move it and its corner handle to resize it. Use the red Hide pill to remove a widget, and the + buttons below to bring it back. Double-click the corner for automatic height. In My accounts, drag a cell to move it or use Cell size to make the cells smaller or larger.</p>
@@ -981,6 +981,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
   <div class="view" id="ratesView" hidden>
     <div class="convbar">
+      <div class="field"><label for="disp">Show all amounts in</label><select id="disp"></select></div>
       <div class="field"><label for="rBase">Rates for 1 unit of</label><select id="rBase"></select></div>
       <div class="field"><label for="rYear">Show</label><select id="rYear"></select></div>
       <button type="button" class="btn sm" id="rFetch">Update rates</button>
@@ -3411,7 +3412,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (k === "tx") addTx();
     else if (k === "budget") { bOpen = true; fillBudget(); focusWidget("cbudget"); $("#bAmt").focus(); }
     else if (k === "goals") openGoalForm(null);
-    else if (k === "report") { showView("dash"); $("#rangeHost").scrollIntoView({ block: "start" }); }
+    else if (k === "report") { showView("rep"); $("#rangeHost").scrollIntoView({ block: "start" }); }
     else if (k === "wallets") openAcctDlg(sc.getAttribute("data-wid") || null);
   });
   $("#gAddBtn").addEventListener("click", function () { if (gFormOpen) closeGoalForm(); else openGoalForm(null); });
@@ -3488,10 +3489,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Customizable dashboard: drag to reorder, corner to resize ===== */
   var DL_DEF = [["accts", 12], ["cards", 12], ["tiles", 12], ["cashflow", 6], ["spark", 6], ["daily", 6], ["activity", 6], ["expenses", 6], ["budgets", 6], ["savings", 6], ["shortcuts", 6],
     ["ccal", 8], ["cday", 4], ["cbudget", 12], ["rstats", 12], ["rchart", 12], ["rexp", 6], ["rinc", 6], ["rwal", 12], ["rdaily", 12]];
+  var REP_PIDS = ["tiles", "cashflow", "spark", "daily", "budgets", "savings", "shortcuts", "ccal", "cday", "cbudget", "rstats", "rchart", "rexp", "rinc", "rwal", "rdaily"];
+  function wgrp(pid) { return REP_PIDS.indexOf(pid) >= 0 ? "rep" : "dash"; }
+  function curGrp() { return state.view === "rep" ? "rep" : "dash"; }
   var dEdit = false, dlBusy = false, dGrid = $("#dGrid");
   function dlGet() {
     var dl = state.dl || {}, size = Object.assign({}, dl.size || {}), ord = (dl.order || []).slice();
-    if (dl.v !== 2) { /* one-time migration: My accounts replaces the old wallet card in place */
+    if ((dl.v || 0) < 2) { /* one-time migration: My accounts replaces the old wallet card in place */
       var ci = ord.indexOf("card");
       ord = ord.filter(function (p) { return p !== "accts"; });
       ci = ord.indexOf("card");
@@ -3503,7 +3507,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (ord.indexOf("cashflow") < 0) { var ti = ord.indexOf("tiles"); ord.splice(ti >= 0 ? ti + 1 : ord.length, 0, "cashflow"); }
     DL_DEF.forEach(function (d) { if (ord.indexOf(d[0]) < 0) ord.push(d[0]); });
     delete size.card;
-    return { order: ord, size: size, hidden: (dl.hidden || []).filter(function (p) { return DL_DEF.some(function (d) { return d[0] === p; }); }), v: 2, acct: Object.assign({ order: [], min: 190, sort: "custom" }, dl.acct || {}) };
+    var hid = (dl.hidden || []).filter(function (p) { return DL_DEF.some(function (d) { return d[0] === p; }); });
+    if ((dl.v || 0) < 3) hid = hid.filter(function (p) { return wgrp(p) !== "rep"; }); /* one-time: widgets that moved to Reports start visible there */
+    return { order: ord, size: size, hidden: hid, v: 3, acct: Object.assign({ order: [], min: 190, sort: "custom" }, dl.acct || {}) };
   }
   function applyLayout() {
     if (dlBusy) return;
@@ -3511,15 +3517,16 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (cur.join() !== L.order.join()) L.order.forEach(function (pid) { var el = dGrid.querySelector('[data-pid="' + pid + '"]'); if (el) dGrid.appendChild(el); });
     DL_DEF.forEach(function (d) {
       var el = dGrid.querySelector('[data-pid="' + d[0] + '"]'), z = L.size[d[0]] || {}; if (!el) return;
-      el.hidden = L.hidden.indexOf(d[0]) >= 0;
+      el.hidden = L.hidden.indexOf(d[0]) >= 0 || wgrp(d[0]) !== curGrp();
       el.style.setProperty("--w", z.w || d[1]);
       if (z.h && d[0] !== "accts") { el.style.setProperty("--h", z.h + "px"); el.setAttribute("data-h", "1"); } else { el.style.removeProperty("--h"); el.removeAttribute("data-h"); }
     });
     dGrid.classList.toggle("edit", dEdit);
     var tray = $("#dTray");
     tray.hidden = !dEdit;
-    tray.innerHTML = '<span class="tl">Hidden widgets</span>' + (L.hidden.length ? L.hidden.map(function (pid) { return '<button type="button" class="btn sm" data-showw="' + pid + '">+ ' + esc(WNAMES[pid]) + "</button>"; }).join("") : '<span class="hint" style="display:inline">None. Use the red Hide pill on a widget to remove it.</span>');
-    $("#dEmpty").hidden = dEdit || L.hidden.length < DL_DEF.length;
+    var hidHere = L.hidden.filter(function (p) { return wgrp(p) === curGrp(); });
+    tray.innerHTML = '<span class="tl">Hidden widgets</span>' + (hidHere.length ? hidHere.map(function (pid) { return '<button type="button" class="btn sm" data-showw="' + pid + '">+ ' + esc(WNAMES[pid]) + "</button>"; }).join("") : '<span class="hint" style="display:inline">None. Use the red Hide pill on a widget to remove it.</span>');
+    $("#dEmpty").hidden = dEdit || DL_DEF.some(function (d) { return wgrp(d[0]) === curGrp() && L.hidden.indexOf(d[0]) < 0; });
   }
   var WNAMES = { accts: "My accounts", cards: "Credit cards", tiles: "Summary", cashflow: "Cash flow", spark: "Spending over time", daily: "Daily expenses", activity: "Recent activity", expenses: "All expenses", budgets: "Budgets", savings: "My savings", shortcuts: "Super Shortcut",
     ccal: "Calendar", cday: "Day log", cbudget: "Monthly budget", rstats: "Report summary", rchart: "Cumulative net cash flow", rexp: "Spending by category", rinc: "Income by category", rwal: "By wallet", rdaily: "Daily breakdown" };
@@ -3628,11 +3635,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
   /* tapping the "Wallet" title toggles Customize layout (from another tab it jumps to the dashboard first) */
   $("#wTitle").addEventListener("click", function () {
-    if (state.view !== "dash") { showView("dash"); if (!dEdit) $("#dCust").click(); return; }
+    if (state.view !== "dash" && state.view !== "rep") { showView("dash"); if (!dEdit) $("#dCust").click(); return; }
     $("#dCust").click();
   });
-  var VIEWS = { dash: "#dashView", rec: "#recView", rates: "#ratesView" };
-  var TABS = { dash: "#tabDash", rec: "#tabRec", rates: "#tabRates" };
+  var VIEWS = { dash: "#dashView", rep: "#dashView", rec: "#recView", rates: "#ratesView" };
+  var TABS = { dash: "#tabDash", rep: "#tabRep", rec: "#tabRec", rates: "#tabRates" };
   function render() {
     buildMap(); autoClose();
     if (tEditId && !state.tx.some(function (t) { return t.id === tEditId; })) {
@@ -3644,22 +3651,23 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     $("#monthLabel").textContent = MONTHS[state.m] + " " + state.y;
     var db = $("#dCust"), ch = $("#wTitle");
     db.parentNode.parentNode.hidden = db.getAttribute("aria-pressed") !== "true";
-    ch.setAttribute("aria-pressed", String(state.view === "dash" && db.getAttribute("aria-pressed") === "true"));
+    ch.setAttribute("aria-pressed", String((state.view === "dash" || state.view === "rep") && db.getAttribute("aria-pressed") === "true"));
     if (!state.repInit) {
       state.repInit = true; $("#rFrom").value = ds(state.y, state.m, 1); $("#rTo").value = ds(state.y, state.m, new Date(state.y, state.m + 1, 0).getDate());
     }
     if (typeof acctDlg !== "undefined" && acctDlg.open) renderAcctHist();
     var days = byDay();
     renderHeader(days);
-    if (state.view === "dash") { renderDash(); renderReport(); renderBudget(days); renderGrid(days); renderDay(days); }
+    if (state.view === "dash" || state.view === "rep") { renderDash(); renderReport(); renderBudget(days); renderGrid(days); renderDay(days); }
     else if (state.view === "rec") renderRecList();
     else renderRates();
     runRecurring();
   }
   function showView(v) {
-    if (v === "cal" || v === "rep") v = "dash";
+    if (v === "cal") v = "dash";
     state.view = v;
-    Object.keys(VIEWS).forEach(function (k) { $(VIEWS[k]).hidden = k !== v; });
+    Object.keys(VIEWS).forEach(function (k) { $(VIEWS[k]).hidden = VIEWS[k] !== VIEWS[v]; });
+    $("#rangeHost").hidden = v !== "rep";
     Object.keys(TABS).forEach(function (k) { $(TABS[k]).setAttribute("aria-pressed", String(k === v)); });
     render();
   }
@@ -3667,7 +3675,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function focusWidget(pid) {
     var L = dlGet();
     if (L.hidden.indexOf(pid) >= 0) { L.hidden = L.hidden.filter(function (x) { return x !== pid; }); saveLayout(L); }
-    showView("dash");
+    showView(wgrp(pid));
     var el = dGrid.querySelector('[data-pid="' + pid + '"]');
     if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" });
   }
@@ -3783,12 +3791,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       var gone = ledgerId; LEDGERS = LEDGERS.filter(function (l) { return l.id !== gone; }); switchTo("main");
     });
     fill();
-  })();
-  /* on phones the currency picker sits next to the date range chip; on wider screens it goes back to the top bar */
-  (function () {
-    var disp = $("#disp"), row = $("#chipRow"), chip = $("#rangeChip"), cur = disp.parentNode, mq = window.matchMedia("(max-width: 699px)");
-    function place() { if (mq.matches) { if (disp.parentNode !== row) row.insertBefore(disp, chip); } else if (disp.parentNode !== cur) cur.appendChild(disp); }
-    place(); if (mq.addEventListener) mq.addEventListener("change", place); else mq.addListener(place);
   })();
   /* ===== Backup / Restore: everything the app keeps on this device (accounts, transactions, categories, budgets, settings) ===== */
   (function () {
