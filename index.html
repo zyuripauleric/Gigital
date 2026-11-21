@@ -817,6 +817,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { inset: auto 0 var(--kb, 0px) 0; transition: bottom 0.2s ease-out; }
   .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg, .kbd #catDlg, .kbd #pickDlg { padding-bottom: 14px; border-radius: 24px; max-height: calc(var(--vvh, 100dvh) - 8px); }
 }
+
+/* Fixed-height sheets for forms that open the keyboard: the height never changes, the sheet just rides above the keyboard */
+@media (max-width: 699px) {
+  #acctDlg, #txDlg, #recDlg, .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg { height: var(--sheet-h, 62dvh); max-height: var(--sheet-h, 62dvh); padding-top: 0; }
+  dialog .dlghead { top: 0; margin-top: 0; }
+}
 </style>
 <script>
 (function () {
@@ -4087,12 +4093,18 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
   /* track the real visible height (iOS toolbars / keyboard) so popups never exceed the screen */
   (function () {
-    var vv = window.visualViewport;
+    var vv = window.visualViewport, kbRef = 340;
+    try { kbRef = Number(localStorage.getItem("wl-kbh")) || 340; } catch (x) {}
+    function safeTop() { var p = document.createElement("div"); p.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)"; document.body.appendChild(p); var v = p.offsetHeight; p.remove(); return v; }
     function set() {
       var h = vv ? vv.height : window.innerHeight, root = document.documentElement;
       /* iOS draws the keyboard over the page without resizing it: measure how much of the bottom is covered so sheets sit above it */
       var kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
       root.style.setProperty("--vvh", h + "px");
+      /* fixed sheet height: the room left above the keyboard (remembered after the first time it opens), so the sheet never resizes when typing */
+      if (kb > 60) { kbRef = Math.round(kb); try { localStorage.setItem("wl-kbh", String(kbRef)); } catch (x) {} }
+      var full = Math.max(window.innerHeight, h + (kb > 60 ? kb : 0));
+      root.style.setProperty("--sheet-h", Math.max(360, Math.min(680, full - safeTop() - kbRef - 14)) + "px");
       root.style.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
       root.classList.toggle("kbd", kb > 60);
     }
