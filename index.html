@@ -1230,7 +1230,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
           <input type="radio" name="akind" id="aOut" value="out" checked><label class="l" for="aOut">Expense</label>
           <input type="radio" name="akind" id="aIn" value="in"><label class="w" for="aIn">Income</label>
           <input type="radio" name="akind" id="aXfer" value="xfer"><label class="a" for="aXfer">Transfer</label>
-          <input type="radio" name="akind" id="aOpen" value="open"><label class="a" for="aOpen">Opening</label>
           <input type="radio" name="akind" id="aAdj" value="adj"><label class="a" for="aAdj">Adjust</label>
         </div>
       </fieldset>
@@ -2192,7 +2191,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   $("#aTabTx").addEventListener("click", function () { setAcctTab("tx"); $("#aAmt").focus(); });
   $("#aTabAcct").addEventListener("click", function () { setAcctTab("acct"); $("#wName").focus(); });
   $("#aCancel").addEventListener("click", function () { closeAcctDlg(); });
-  function aKind() { return $("#aXfer").checked ? "xfer" : $("#aOpen").checked ? "open" : $("#aAdj").checked ? "adj" : $("#aIn").checked ? "in" : "out"; }
+  function aKind() { return $("#aXfer").checked ? "xfer" : $("#aAdj").checked ? "adj" : $("#aIn").checked ? "in" : "out"; }
   function resetAcctTx() {
     var w = wmap[wEditId]; if (!w) return;
     var bal0 = balances()[w.id] || 0;
@@ -2205,13 +2204,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   function updateAcctTx() {
     var w = wmap[wEditId]; if (!w) return;
-    var k = aKind(), to = wmap[$("#aTo").value], diff = k === "xfer" && to && to.cur !== w.cur, adjK = k === "open" || k === "adj";
+    var k = aKind(), to = wmap[$("#aTo").value], diff = k === "xfer" && to && to.cur !== w.cur, adjK = k === "adj";
     $("#aXferRow").hidden = k !== "xfer"; $("#aCatBox").hidden = k === "xfer" || adjK; $("#aPayeeBox").hidden = k === "xfer" || adjK;
     $("#aPay").closest(".field").hidden = adjK; $("#aLabels").closest(".field").hidden = adjK; $("#aDirBox").hidden = !adjK;
-    if (adjK) { $("#aSubRow").hidden = true; $("#aDirHint").textContent = "Not counted as income or spending in your reports." + (k === "open" && isCredit(w) ? " For a credit card, the opening balance is what you owe, so it decreases the balance." : ""); }
-    $("#aSave").textContent = k === "open" ? "Add opening balance" : k === "adj" ? "Add adjustment" : "Add transaction";
+    if (adjK) { $("#aSubRow").hidden = true; $("#aDirHint").textContent = "Corrects the balance. Not counted as income or spending in your reports."; }
+    $("#aSave").textContent = k === "adj" ? "Add adjustment" : "Add transaction";
     $("#aAmt2Box").hidden = !diff;
-    $("#aAmtL").textContent = (isCredit(w) && k === "xfer" ? "Payment amount (" : k === "open" ? "Opening balance amount (" : k === "adj" ? "Adjustment amount (" : "Amount (") + w.cur + ")";
+    $("#aAmtL").textContent = (isCredit(w) && k === "xfer" ? "Payment amount (" : k === "adj" ? "Adjustment amount (" : "Amount (") + w.cur + ")";
     document.querySelector('label[for="aTo"]').textContent = isCredit(w) ? "Pay from account" : "To account";
     $("#aPayeeL").textContent = k === "in" ? "Payer" : "Payee";
     $("#aPayee").placeholder = k === "in" ? "Who paid you" : "Who you paid";
@@ -2226,13 +2225,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   ["#aAmt", "#aTo"].forEach(function (s) { $(s).addEventListener("input", updateAcctTx); $(s).addEventListener("change", updateAcctTx); });
   document.querySelectorAll('input[name="akind"]').forEach(function (r) { r.addEventListener("change", function () {
-    var k = aKind(), w = wmap[wEditId];
-    if (k === "open") $("#aDir").value = w && isCredit(w) ? "out" : "in"; else if (k === "adj") $("#aDir").value = "in";
+    if (aKind() === "adj") $("#aDir").value = "in";
     updateAcctTx();
   }); });
   $("#aTxForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    var w = wmap[wEditId], err = $("#aErr"), k = aKind(), adjK = k === "open" || k === "adj"; if (!w) return;
+    var w = wmap[wEditId], err = $("#aErr"), k = aKind(), adjK = k === "adj"; if (!w) return;
     var raw = evalExpr($("#aAmt").value, w.cur), date = $("#aDate").value;
     if (!isFinite(raw) || raw <= 0) { err.textContent = "Enter an amount above 0, or a sum like 120+45.5."; $("#aAmt").focus(); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = "Pick a date."; $("#aDate").focus(); return; }
@@ -2249,7 +2247,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         t.toAmount = isFinite(r2) && r2 > 0 ? rnd(r2, to.cur) : rnd(conv(raw, w.cur, to.cur), to.cur);
       }
     } else if (!adjK) { t.cat = $("#aCat").value.trim() || (k === "in" ? "Income" : "Other"); t.sub = $("#aSub").value.trim(); }
-    if (adjK) { t.kind = $("#aDir").value === "out" ? "out" : "in"; t.adj = k; t.cat = k === "open" ? "Opening balance" : "Adjustment"; t.sub = ""; t.payee = ""; t.pay = "Other"; t.labels = ""; }
+    if (adjK) { t.kind = $("#aDir").value === "out" ? "out" : "in"; t.adj = "adj"; t.cat = "Adjustment"; t.sub = ""; t.payee = ""; t.pay = "Other"; t.labels = ""; }
     if (k === "xfer" && isCredit(w)) {
       var o2 = wmap[t.to], amtCard = rnd(raw, w.cur), rr = $("#aAmt2").value.trim() === "" ? NaN : evalExpr($("#aAmt2").value, o2.cur);
       t.wallet = o2.id; t.to = w.id; t.toAmount = amtCard;
