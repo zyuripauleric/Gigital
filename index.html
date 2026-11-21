@@ -845,6 +845,8 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
 /* warning shown when editing a recurring item that already has posted charges */
 .warnbox { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(217, 154, 30, 0.6); background: rgba(217, 154, 30, 0.13); font-size: 12.5px; line-height: 1.45; }
+
+#aTxForm .seg label { font-size: 12.5px; padding: 8px 2px; }
 </style>
 <script>
 (function () {
@@ -1228,12 +1230,15 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
           <input type="radio" name="akind" id="aOut" value="out" checked><label class="l" for="aOut">Expense</label>
           <input type="radio" name="akind" id="aIn" value="in"><label class="w" for="aIn">Income</label>
           <input type="radio" name="akind" id="aXfer" value="xfer"><label class="a" for="aXfer">Transfer</label>
+          <input type="radio" name="akind" id="aOpen" value="open"><label class="a" for="aOpen">Opening</label>
+          <input type="radio" name="akind" id="aAdj" value="adj"><label class="a" for="aAdj">Adjust</label>
         </div>
       </fieldset>
       <div class="row2">
         <div class="field"><label for="aAmt" id="aAmtL">Amount</label><input type="text" id="aAmt" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
         <div class="field"><label for="aDate">Date</label><input type="date" id="aDate"></div>
       </div>
+      <div class="field" id="aDirBox" hidden><label for="aDir">Effect on balance</label><select id="aDir"><option value="in">Increase the balance</option><option value="out">Decrease the balance</option></select><small class="hint" id="aDirHint"></small></div>
       <div class="row2" id="aXferRow" hidden>
         <div class="field"><label for="aTo">To account</label><select id="aTo"></select></div>
         <div class="field" id="aAmt2Box"><label for="aAmt2" id="aAmt2L">Amount received</label><input type="text" id="aAmt2" inputmode="decimal" placeholder="auto" autocomplete="off"></div>
@@ -1558,7 +1563,8 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Data ===== */
   function isCredit(w) { return !!w && (w.type === "Credit card" || w.type === "Card"); }
   var wmap = {};
-  function validR(t) { return validT(t) && !wmap[t.wallet].noRep; }
+  function validR(t) { return validT(t) && !wmap[t.wallet].noRep && !t.adj; } /* opening balances and adjustments change balances but are not income or spending */
+  function validA(t) { return validT(t) && !wmap[t.wallet].noRep; }
   function validT(t) { return t && typeof t.date === "string" && typeof t.amount === "number" && isFinite(t.amount) && (t.kind === "in" || t.kind === "out" || t.kind === "xfer") && wmap[t.wallet] && (t.kind !== "xfer" || wmap[t.to]); }
   var catMap = {};
   function buildMap() { wmap = {}; RAW.wallets.forEach(function (w) { wmap[w.id] = w; }); state.wallets.forEach(function (w) { wmap[w.id] = w; }); var u = {}; state.tx.forEach(function (t) { if (t && t.cat) u[t.cat] = 1; }); catMap = {};
@@ -2186,7 +2192,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   $("#aTabTx").addEventListener("click", function () { setAcctTab("tx"); $("#aAmt").focus(); });
   $("#aTabAcct").addEventListener("click", function () { setAcctTab("acct"); $("#wName").focus(); });
   $("#aCancel").addEventListener("click", function () { closeAcctDlg(); });
-  function aKind() { return $("#aXfer").checked ? "xfer" : $("#aIn").checked ? "in" : "out"; }
+  function aKind() { return $("#aXfer").checked ? "xfer" : $("#aOpen").checked ? "open" : $("#aAdj").checked ? "adj" : $("#aIn").checked ? "in" : "out"; }
   function resetAcctTx() {
     var w = wmap[wEditId]; if (!w) return;
     var bal0 = balances()[w.id] || 0;
@@ -2199,10 +2205,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   function updateAcctTx() {
     var w = wmap[wEditId]; if (!w) return;
-    var k = aKind(), to = wmap[$("#aTo").value], diff = k === "xfer" && to && to.cur !== w.cur;
-    $("#aXferRow").hidden = k !== "xfer"; $("#aCatBox").hidden = k === "xfer"; $("#aPayeeBox").hidden = k === "xfer";
+    var k = aKind(), to = wmap[$("#aTo").value], diff = k === "xfer" && to && to.cur !== w.cur, adjK = k === "open" || k === "adj";
+    $("#aXferRow").hidden = k !== "xfer"; $("#aCatBox").hidden = k === "xfer" || adjK; $("#aPayeeBox").hidden = k === "xfer" || adjK;
+    $("#aPay").closest(".field").hidden = adjK; $("#aLabels").closest(".field").hidden = adjK; $("#aDirBox").hidden = !adjK;
+    if (adjK) { $("#aSubRow").hidden = true; $("#aDirHint").textContent = "Not counted as income or spending in your reports." + (k === "open" && isCredit(w) ? " For a credit card, the opening balance is what you owe, so it decreases the balance." : ""); }
+    $("#aSave").textContent = k === "open" ? "Add opening balance" : k === "adj" ? "Add adjustment" : "Add transaction";
     $("#aAmt2Box").hidden = !diff;
-    $("#aAmtL").textContent = (isCredit(w) && k === "xfer" ? "Payment amount (" : "Amount (") + w.cur + ")";
+    $("#aAmtL").textContent = (isCredit(w) && k === "xfer" ? "Payment amount (" : k === "open" ? "Opening balance amount (" : k === "adj" ? "Adjustment amount (" : "Amount (") + w.cur + ")";
     document.querySelector('label[for="aTo"]').textContent = isCredit(w) ? "Pay from account" : "To account";
     $("#aPayeeL").textContent = k === "in" ? "Payer" : "Payee";
     $("#aPayee").placeholder = k === "in" ? "Who paid you" : "Who you paid";
@@ -2212,14 +2221,18 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       $("#aAmt2").placeholder = isFinite(a) && a > 0 ? "about " + rnd(conv(a, w.cur, to.cur), to.cur) : "auto";
     }
     $("#aXferHint").textContent = k === "xfer" ? (!to ? (isCredit(w) ? "Add a bank or cash account to pay from." : "Add another account to make a transfer.") : diff ? "Leave the received amount blank to use the current rate." : "") : "";
-    refreshSub("#aCat", "#aSubList", k); var dl = $("#aCatList"), want = k === "in" ? CATS["in"] : CATS.out.concat(state.budgets.map(function (u) { return u.name; }).filter(function (n) { return n && CATS.out.indexOf(n) < 0; })), sig = k + "|" + want.join();
+    if (!adjK) refreshSub("#aCat", "#aSubList", k); var dl = $("#aCatList"), want = k === "in" ? CATS["in"] : CATS.out.concat(state.budgets.map(function (u) { return u.name; }).filter(function (n) { return n && CATS.out.indexOf(n) < 0; })), sig = k + "|" + want.join();
     if (dl.getAttribute("data-k") !== sig) { dl.setAttribute("data-k", sig); dl.innerHTML = want.map(function (c) { return '<option value="' + esc(c) + '">'; }).join(""); }
   }
   ["#aAmt", "#aTo"].forEach(function (s) { $(s).addEventListener("input", updateAcctTx); $(s).addEventListener("change", updateAcctTx); });
-  document.querySelectorAll('input[name="akind"]').forEach(function (r) { r.addEventListener("change", updateAcctTx); });
+  document.querySelectorAll('input[name="akind"]').forEach(function (r) { r.addEventListener("change", function () {
+    var k = aKind(), w = wmap[wEditId];
+    if (k === "open") $("#aDir").value = w && isCredit(w) ? "out" : "in"; else if (k === "adj") $("#aDir").value = "in";
+    updateAcctTx();
+  }); });
   $("#aTxForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    var w = wmap[wEditId], err = $("#aErr"), k = aKind(); if (!w) return;
+    var w = wmap[wEditId], err = $("#aErr"), k = aKind(), adjK = k === "open" || k === "adj"; if (!w) return;
     var raw = evalExpr($("#aAmt").value, w.cur), date = $("#aDate").value;
     if (!isFinite(raw) || raw <= 0) { err.textContent = "Enter an amount above 0, or a sum like 120+45.5."; $("#aAmt").focus(); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = "Pick a date."; $("#aDate").focus(); return; }
@@ -2235,7 +2248,8 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         var r2 = $("#aAmt2").value.trim() === "" ? NaN : evalExpr($("#aAmt2").value, to.cur);
         t.toAmount = isFinite(r2) && r2 > 0 ? rnd(r2, to.cur) : rnd(conv(raw, w.cur, to.cur), to.cur);
       }
-    } else { t.cat = $("#aCat").value.trim() || (k === "in" ? "Income" : "Other"); t.sub = $("#aSub").value.trim(); }
+    } else if (!adjK) { t.cat = $("#aCat").value.trim() || (k === "in" ? "Income" : "Other"); t.sub = $("#aSub").value.trim(); }
+    if (adjK) { t.kind = $("#aDir").value === "out" ? "out" : "in"; t.adj = k; t.cat = k === "open" ? "Opening balance" : "Adjustment"; t.sub = ""; t.payee = ""; t.pay = "Other"; t.labels = ""; }
     if (k === "xfer" && isCredit(w)) {
       var o2 = wmap[t.to], amtCard = rnd(raw, w.cur), rr = $("#aAmt2").value.trim() === "" ? NaN : evalExpr($("#aAmt2").value, o2.cur);
       t.wallet = o2.id; t.to = w.id; t.toAmount = amtCard;
@@ -3440,7 +3454,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var AR = sel ? R : actRange === "all" ? null : actPeriod(actRange);
     document.querySelectorAll("[data-ar]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ar") === actRange)); });
     $("#aRange").hidden = !!sel;
-    var rows = state.tx.filter(validR).filter(function (t) {
+    var rows = state.tx.filter(validA).filter(function (t) {
       if (AR && !inRange(t.date, AR)) return false;
       if (actKind !== "all" && t.kind !== actKind) return false;
       if (actWal && t.wallet !== actWal && t.to !== actWal) return false;
