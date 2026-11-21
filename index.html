@@ -68,6 +68,15 @@ button { cursor: pointer; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
 .status { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; min-height: 18px; }
 .status.warn { color: var(--loss); }
+.status.quote { display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 2px solid var(--accent); font-style: italic; line-height: 1.4; }
+.status.quote .qt { color: var(--ink); opacity: 0.85; }
+.status.quote .qa { font-style: normal; font-size: 11.5px; letter-spacing: 0.04em; color: var(--muted); }
+.status.quote .qa::before { content: "\2014\00a0"; }
+.status.msg { color: var(--accent); font-weight: 500; }
+.status.msg.warn { color: var(--loss); }
+@keyframes qin { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes vin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pin { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
 #rangeHost .status:empty { display: none; } #rangeHost { display: flex; flex-direction: column; gap: 8px; }
 .cur { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 select, input[type="text"], input[type="number"], input[type="date"] {
@@ -570,7 +579,17 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 @media (prefers-reduced-motion: no-preference) {
   .cell, .btn, .wcard { transition: border-color 0.12s, background-color 0.12s, transform 0.15s; }
   .themesw, .themesw .knob { transition: transform 0.28s cubic-bezier(0.3, 0.8, 0.2, 1), background-color 0.2s; }
-  .bar span { transition: width 0.25s; }
+  .bar span { transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .status.qin { animation: qin 0.5s ease-out; }
+  .view.vin { animation: vin 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .view.vin .dp:not([hidden]) { animation: pin 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .view.vin .dp:nth-child(2) { animation-delay: 0.04s; } .view.vin .dp:nth-child(3) { animation-delay: 0.08s; } .view.vin .dp:nth-child(4) { animation-delay: 0.12s; }
+  .view.vin .dp:nth-child(5) { animation-delay: 0.16s; } .view.vin .dp:nth-child(n+6) { animation-delay: 0.2s; }
+  .btn:active, .chp:active, .acct:active { transform: scale(0.97); }
+  .acct, .ctile, .goal, .tile, .act { transition: border-color 0.15s, background-color 0.15s, transform 0.15s, box-shadow 0.2s; }
+  .goal:hover, .ctile:hover, #dAccts .acct:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -14px rgba(0, 0, 0, 0.5); }
+  .tabs button { transition: background-color 0.2s, color 0.2s, transform 0.15s; }
+  .tabs button:active { transform: scale(0.94); }
 }
 @media (prefers-reduced-transparency: reduce) {
   .panel, .day, .stats, .rangebar, .convbar, .dp > .cal { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); }
@@ -727,6 +746,56 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 .chips.sub .chp { min-height: 32px; padding: 0 12px; font-size: 13.5px; }
 .chips.sub .chp.gear { width: 38px; padding: 0; }
 .chips.sub .chp svg { width: 16px; height: 16px; }
+
+/* ===== Round 2: bigger account tiles with aligned amounts, bottom sheets on phones, swipe-to-delete, consistent icons ===== */
+#dAccts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+#dAccts .acct { container-type: inline-size; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 12px 12px 11px; border-radius: 16px; text-align: left; }
+#dAccts .acct .an { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 14.5px; font-weight: 600; line-height: 1.25; min-height: calc(34px + 8px + 2.5em); }
+#dAccts .acct .an > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; line-height: 1.25; max-width: 100%; }
+#dAccts .acct .ab { display: block; width: 100%; text-align: left; font-size: clamp(14px, 10.5cqw, 21px); line-height: 1.25; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; margin-top: 2px; }
+#dAccts .acct .as { font-size: 12px; line-height: 1.3; color: var(--muted); overflow-wrap: anywhere; }
+#dAccts .acct .ao { font-size: 12px; line-height: 1.3; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 699px) {
+  /* iPhone: three tiles per row so names and amounts can be read */
+  #dAccts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  #dAccts .acct { padding: 11px 10px 10px; border-radius: 14px; gap: 3px; }
+  #dAccts .acct .an { font-size: 13px; gap: 7px; min-height: calc(34px + 7px + 2.5em); }
+  #dAccts .acct .ab { font-size: clamp(13px, 12.5cqw, 17px); letter-spacing: -0.03em; }
+  #dAccts .acct .as, #dAccts .acct .ao { font-size: 11.5px; }
+}
+
+/* Bottom sheets on phones (respects the Dynamic Island and the home bar) */
+@keyframes sheetin { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes bdin { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 699px) {
+  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg {
+    inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 100%; height: fit-content;
+    border-radius: 24px 24px 0 0; border-bottom: 0;
+    padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(var(--vvh, 100dvh) - 12px - env(safe-area-inset-top, 0px));
+  }
+  #pickDlg { max-height: calc(var(--vvh, 100dvh) - 12px - env(safe-area-inset-top, 0px)); }
+  dialog .dlghead { top: 0; margin: 0 -18px 12px; padding: 24px 18px 10px; border-radius: 24px 24px 0 0; }
+  dialog .dlghead::before { content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px; border-radius: 5px; background: var(--hair); }
+  #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open] { animation: sheetin 0.34s cubic-bezier(0.2, 0.85, 0.25, 1); }
+  #acctDlg[open]::backdrop, #txDlg[open]::backdrop, #recDlg[open]::backdrop, #catDlg[open]::backdrop, #pickDlg[open]::backdrop { animation: bdin 0.3s ease-out; }
+}
+@media (prefers-reduced-motion: reduce) { #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open], dialog[open]::backdrop { animation: none !important; } }
+
+/* Swipe left on a transaction to delete (touch) */
+.act[data-id], .act[data-hid] { position: relative; touch-action: pan-y; }
+.act .swdel { display: none; position: absolute; top: 2px; bottom: 2px; right: 0; width: 84px; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: var(--loss); color: #fff; font-weight: 600; font-size: 13.5px; }
+.act.swp { overflow: hidden; border-radius: 12px; }
+.act.swp .swdel { display: flex; }
+.act.swp > *:not(.swdel) { transform: translateX(var(--sx, 0px)); transition: transform 0.26s cubic-bezier(0.2, 0.85, 0.25, 1); }
+.act.swp.swdrag > *:not(.swdel) { transition: none; }
+
+/* One icon style everywhere: same line weight at every size */
+.tabs button svg, .tile .ic svg, .act .aic svg, .sc .sic svg, .chp svg, .wi svg, .themesw svg, .searchbar svg, #ledgerInAll svg { stroke-linecap: round; stroke-linejoin: round; }
+.tabs button svg path, .tabs button svg rect, .tabs button svg circle, .tile .ic svg *, .act .aic svg *, .sc .sic svg *, .chp svg *, .wi svg *, .themesw .sun *, .searchbar svg *, #ledgerInAll svg * { vector-effect: non-scaling-stroke; stroke-width: 1.75px; }
+.tabs button svg { width: 22px; height: 22px; }
+.tile .ic svg, .act .aic svg, .sc .sic svg { width: 20px; height: 20px; }
+.chp svg, #ledgerInAll svg, .searchbar svg { width: 18px; height: 18px; }
 </style>
 <script>
 (function () {
@@ -1356,7 +1425,47 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var dec = CUR[state.disp].dec === 0 || a >= 100 ? 0 : 2;
     return (n < 0 ? "−" : n > 0 ? "+" : "") + a.toLocaleString(state.disp === "IDR" ? "id-ID" : undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
-  function setStatus(msg, warn) { var el = $("#status"); el.textContent = msg; el.className = "status" + (warn ? " warn" : ""); }
+  /* Mindset quotes: shown under the ledger bar. Action messages ("Added to...", "Ledger is now included...") appear briefly, then fade back to a quote. Warnings stay until the next message. */
+  var QUOTES = [
+    ["The journey of a thousand miles begins with a single step.", "Lao Tzu"],
+    ["It does not matter how slowly you go as long as you do not stop.", "Confucius"],
+    ["Whether you think you can, or you think you can't, you're right.", "Henry Ford"],
+    ["The only way to do great work is to love what you do.", "Steve Jobs"],
+    ["Do not save what is left after spending, but spend what is left after saving.", "Warren Buffett"],
+    ["Beware of little expenses; a small leak will sink a great ship.", "Benjamin Franklin"],
+    ["Well done is better than well said.", "Benjamin Franklin"],
+    ["Energy and persistence conquer all things.", "Benjamin Franklin"],
+    ["Someone is sitting in the shade today because someone planted a tree a long time ago.", "Warren Buffett"],
+    ["The stock market is a device for transferring money from the impatient to the patient.", "Warren Buffett"],
+    ["Success is the sum of small efforts, repeated day in and day out.", "Robert Collier"],
+    ["Discipline is the bridge between goals and accomplishment.", "Jim Rohn"],
+    ["Do what you can, with what you have, where you are.", "Theodore Roosevelt"],
+    ["He who has a why to live can bear almost any how.", "Friedrich Nietzsche"],
+    ["Wealth consists not in having great possessions, but in having few wants.", "Epictetus"],
+    ["Genius is one percent inspiration, ninety-nine percent perspiration.", "Thomas Edison"],
+    ["Courage is not the absence of fear, but the triumph over it.", "Nelson Mandela"],
+    ["Act as if what you do makes a difference. It does.", "William James"],
+    ["Fall seven times, stand up eight.", "Japanese proverb"],
+    ["The best time to plant a tree was twenty years ago. The second best time is now.", "Proverb"]
+  ];
+  var qIdx = -1, stTimer = null, qTimer = null;
+  function showQuote(fade) {
+    var el = $("#status"), i;
+    do { i = Math.floor(Math.random() * QUOTES.length); } while (i === qIdx && QUOTES.length > 1);
+    qIdx = i;
+    el.className = "status quote" + (fade ? " qin" : "");
+    el.setAttribute("aria-live", "off");
+    el.innerHTML = '<span class="qt">“' + esc(QUOTES[i][0]) + '”</span><span class="qa">' + esc(QUOTES[i][1]) + "</span>";
+  }
+  function setStatus(msg, warn) {
+    var el = $("#status"); clearTimeout(stTimer);
+    if (!msg) { showQuote(true); return; }
+    el.setAttribute("aria-live", "polite");
+    el.className = "status msg" + (warn ? " warn" : "") + " qin"; el.textContent = msg;
+    if (!warn) stTimer = setTimeout(function () { showQuote(true); }, 4500);
+  }
+  setInterval(function () { if ($("#status").classList.contains("quote") && !document.hidden) showQuote(true); }, 45000);
+  showQuote(false);
   function parseD(s) { var p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
   function dstr(d) { return ds(d.getFullYear(), d.getMonth(), d.getDate()); }
   function fmtDate(s) { return parseD(s).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); }
@@ -1494,6 +1603,70 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     });
   }
   var actBulk = bulkNew(), histBulk = bulkNew();
+
+  /* ===== Confetti when a savings goal is reached ===== */
+  function confetti() {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var cv = document.createElement("canvas"), W = window.innerWidth, H = window.innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr; cv.setAttribute("aria-hidden", "true");
+    cv.style.cssText = "position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2000";
+    document.body.appendChild(cv);
+    var c = cv.getContext("2d"), cols = ["#1d8f7e", "#2f6fbf", "#d08a00", "#d64545", "#7a5fc4", "#d0549a", "#6f9c1a"], P = [], i, t0 = performance.now();
+    c.scale(dpr, dpr);
+    for (i = 0; i < 120; i++) P.push({ x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.38, vx: (Math.random() - 0.5) * 15, vy: -Math.random() * 13 - 4, s: 6 + Math.random() * 6, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, c: cols[i % cols.length] });
+    (function frame(t) {
+      var el = t - t0; c.clearRect(0, 0, W, H);
+      P.forEach(function (p) {
+        p.vy += 0.35; p.vx *= 0.992; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        c.save(); c.globalAlpha = Math.max(0, 1 - el / 2600); c.translate(p.x, p.y); c.rotate(p.r); c.fillStyle = p.c; c.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.6); c.restore();
+      });
+      if (el < 2600) requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+  }
+  function celebrate(name) { confetti(); setStatus("Goal reached: " + name + ". Well done!"); }
+
+  /* ===== Swipe left on a transaction (touch) to reveal Delete ===== */
+  var SWBTN = '<button type="button" class="swdel" data-swdel tabindex="-1" aria-label="Delete transaction">Delete</button>';
+  function wireSwipe(host, sel, idAttr, isBulk) {
+    var OPEN = 88, st = null, open = null, swallow = false;
+    function setX(row, x, anim) { row.classList.toggle("swdrag", !anim); row.style.setProperty("--sx", x + "px"); }
+    function closeRow(row) { if (!row) return; setX(row, 0, true); row.classList.remove("swopen"); setTimeout(function () { if (!row.classList.contains("swopen")) row.classList.remove("swp"); }, 260); if (open === row) open = null; }
+    host.addEventListener("pointerdown", function (e) {
+      if (e.pointerType !== "touch" || isBulk() || e.target.closest("[data-swdel]")) return;
+      var row = e.target.closest(sel); if (!row) return;
+      st = { row: row, x0: e.clientX, y0: e.clientY, base: row.classList.contains("swopen") ? -OPEN : 0, on: false, dead: false, x: 0 };
+    });
+    host.addEventListener("pointermove", function (e) {
+      if (!st || st.dead) return;
+      var dx = e.clientX - st.x0, dy = e.clientY - st.y0;
+      if (!st.on) {
+        if (Math.abs(dx) < 9 && Math.abs(dy) < 9) return;
+        if (Math.abs(dx) < Math.abs(dy) * 1.4) { st.dead = true; return; }
+        st.on = true; if (open && open !== st.row) closeRow(open);
+        st.row.classList.add("swp"); try { st.row.setPointerCapture(e.pointerId); } catch (x) {}
+      }
+      st.x = Math.max(-OPEN - 24, Math.min(0, st.base + dx)); setX(st.row, st.x, false);
+    });
+    function end() {
+      if (!st) return; var s = st; st = null; if (!s.on) return;
+      swallow = true; setTimeout(function () { swallow = false; }, 350);
+      if (s.x < -OPEN / 2) { s.row.classList.add("swopen"); setX(s.row, -OPEN, true); open = s.row; } else closeRow(s.row);
+    }
+    host.addEventListener("pointerup", end); host.addEventListener("pointercancel", end);
+    /* a tap anywhere else closes an open row */
+    document.addEventListener("pointerdown", function (e) {
+      if (!open || !open.isConnected) { open = null; return; }
+      if (e.target.closest("[data-swdel]") && open.contains(e.target)) return;
+      var r = open; closeRow(r); if (host.contains(e.target)) { swallow = true; setTimeout(function () { swallow = false; }, 350); }
+    }, true);
+    host.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-swdel]");
+      if (b) { e.stopPropagation(); e.preventDefault(); var row = b.closest(sel); open = null; if (row) drop("t", row.getAttribute(idAttr)); return; }
+      if (swallow) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
+  wireSwipe($("#dAct"), ".act[data-id]", "data-id", function () { return actBulk.mode; });
+  wireSwipe($("#aHistList"), ".act[data-hid]", "data-hid", function () { return histBulk.mode; });
 
   /* ===== Header, stats, budget ===== */
   function monthPrefix() { return state.y + "-" + pad(state.m + 1) + "-"; }
@@ -2043,7 +2216,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       var hpk = histBulk.mode && histBulk.pick[t.id];
       var hlead = histBulk.mode ? '<label class="apick"><input type="checkbox" data-pickbox aria-label="Select transaction"' + (hpk ? " checked" : "") + '></label>' : '<span class="aic" style="--tc:' + col + '">' + svgi(AIC[t.kind]) + "</span>";
       html += '<div class="act' + (hpk ? " sel" : "") + '"' + (histBulk.mode ? "" : ' role="button" tabindex="0" title="Click to edit this transaction"') + ' data-hid="' + esc(t.id) + '">' + hlead + "<div><span>" + txTitle(t) + "</span>" +
-        (t.rid ? '<span class="rec" title="Posted automatically by a recurring item" aria-label="Recurring">↻</span>' : "") + '<div class="note">' + sub + '</div></div><span class="amt ' + ac + '">' + amt + "</span></div>";
+        (t.rid ? '<span class="rec" title="Posted automatically by a recurring item" aria-label="Recurring">↻</span>' : "") + '<div class="note">' + sub + '</div></div><span class="amt ' + ac + '">' + amt + "</span>" + SWBTN + "</div>";
     });
     if (more > 0) html += '<div class="hmore"><button type="button" class="btn sm" data-hmore>Show ' + Math.min(HIST_STEP, more) + " more</button></div>";
     renderBulk(histBulk, $("#aHistBulk"), $("#aHistSel"));
@@ -3175,7 +3348,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       var lead = actBulk.mode ? '<label class="apick"><input type="checkbox" data-pickbox aria-label="Select transaction"' + (pk ? " checked" : "") + '></label>' : '<span class="aic" style="--tc:' + col + '" title="' + esc(t.kind === "xfer" ? "Transfer" : t.cat || "Other") + '">' + svgi(AIC[t.kind]) + '</span>';
       html += '<div class="act' + (on || pk ? " sel" : "") + '" data-id="' + esc(t.id) + '">' + lead + '<div><button type="button" class="linkbtn plain" data-pick="' + esc(t.id) + '" aria-expanded="' + on + '">' + txTitle(t) + "</button>" +
         (t.rid ? '<span class="rec" title="Posted automatically by a recurring item" aria-label="Recurring">↻</span>' : "") + '<div class="note">' + sub + "</div></div>" +
-        '<span class="amt ' + ac + '">' + amt + "</span></div>";
+        '<span class="amt ' + ac + '">' + amt + "</span>" + SWBTN + "</div>";
       if (on) html += '<div class="actrow"><button type="button" class="btn sm" data-aedit="' + esc(t.id) + '">Edit</button><button type="button" class="btn sm" data-adel="' + esc(t.id) + '">Delete</button></div>';
     });
     if (more > 0) html += '<div class="actmore"><button type="button" class="btn sm" data-amore="' + ACT_STEP + '">Show ' + Math.min(ACT_STEP, more) + ' more</button><button type="button" class="btn sm" data-aall>Show all time</button></div>';
@@ -3261,7 +3434,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (document.activeElement !== $("#aSize")) $("#aSize").value = min;
     host.innerHTML = ws.length ? ws.map(function (w) {
       var v = b[w.id] || 0;
-      return '<button type="button" class="acct' + (w.hidden ? ' ishid' : '') + (w.noRep ? ' norep' : '') + '" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + (ledgerId === "all" ? " · " + esc(ledgerName(w.ledger || "main")) : "") + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
+      return '<button type="button" class="acct' + (w.hidden ? ' ishid' : '') + (w.noRep ? ' norep' : '') + '" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + iconSpan(iconKey(w), true) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + (ledgerId === "all" ? " · " + esc(ledgerName(w.ledger || "main")) : "") + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
     }).join("") : '<p class="empty">No accounts yet. <button type="button" class="linkbtn" data-addacct>Add an account</button> or <button type="button" class="linkbtn" id="seedBtn">load a few examples</button>.</p>';
   }
   function nextDue(day) {
@@ -3441,9 +3614,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (!isFinite(tg) || tg <= 0) { err.textContent = "The target must be a number above 0."; $("#gTarget").focus(); return; }
     if (!isFinite(st) || st < 0) { err.textContent = "Saved so far must be 0 or more."; $("#gSaved").focus(); return; }
     var o = { name: name, target: rnd(tg, cur), saved: rnd(st, cur), cur: cur };
-    if (gEditId) { patch("g", gEditId, o).then(function (ok) { if (ok !== false) closeGoalForm(); }); return; }
+    var hit = o.saved >= o.target, wasDone = false;
+    state.goals.forEach(function (x) { if (x.id === gEditId && x.saved >= x.target) wasDone = true; });
+    if (gEditId) { patch("g", gEditId, o).then(function (ok) { if (ok !== false) { closeGoalForm(); if (hit && !wasDone) celebrate(o.name); } }); return; }
     o.createdAt = Date.now();
-    put("g", o).then(function (id) { if (id) closeGoalForm(); });
+    put("g", o).then(function (id) { if (id) { closeGoalForm(); if (hit) celebrate(o.name); } });
   });
 
   /* ===== Budgets (several, per category) ===== */
@@ -3683,6 +3858,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     Object.keys(VIEWS).forEach(function (k) { $(VIEWS[k]).hidden = VIEWS[k] !== VIEWS[v]; });
     $("#rangeHost").hidden = v !== "rep";
     Object.keys(TABS).forEach(function (k) { $(TABS[k]).setAttribute("aria-pressed", String(k === v)); });
+    var vw = $(VIEWS[v]); vw.classList.remove("vin"); void vw.offsetWidth; vw.classList.add("vin"); setTimeout(function () { vw.classList.remove("vin"); }, 900);
     render();
   }
   /* Calendar and Report live on the dashboard now: bring a widget back if it was hidden, then scroll to it */
