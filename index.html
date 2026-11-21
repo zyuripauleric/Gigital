@@ -612,6 +612,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 }
 /* while dragging: the other accounts gently float/wiggle (like rearranging apps on the iPhone Home Screen) */
 @keyframes acctFloat { 0% { transform: rotate(-1.2deg) translateY(0); } 50% { transform: rotate(1.2deg) translateY(-2px); } 100% { transform: rotate(-1.2deg) translateY(0); } }
+#dAccts.sorting .acct { touch-action: none; }
 #dAccts.sorting .acct:not(.dragging) { animation: acctFloat .5s ease-in-out infinite; }
 #dAccts.sorting .acct:not(.dragging):nth-child(2n) { animation-delay: -.25s; }
 #dAccts.sorting .acct:not(.dragging):nth-child(3n) { animation-duration: .6s; }
@@ -3518,13 +3519,22 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var z = e.target.closest(".rz"), el = e.target.closest(".dp"); if (!z || !el) return;
     var L = dlGet(), pid = el.getAttribute("data-pid"), cur = L.size[pid] || {}; L.size[pid] = { w: cur.w }; saveLayout(L); render();
   });
-  var swallow = false;
+  var swallow = false, wiggle = false;
+  /* touch: after a long press the accounts keep wiggling (like the iPhone Home Screen) until you tap anywhere else */
+  function wigOut(e) {
+    if (e.target.closest && e.target.closest("#dAccts .acct[data-wid]")) return;
+    wiggleOff();
+    var kill = function (ev) { ev.stopPropagation(); ev.preventDefault(); };
+    document.addEventListener("click", kill, true); setTimeout(function () { document.removeEventListener("click", kill, true); }, 450);
+  }
+  function wiggleOn() { if (wiggle) return; wiggle = true; $("#dAccts").classList.add("sorting"); setTimeout(function () { if (wiggle) document.addEventListener("pointerdown", wigOut, true); }, 0); }
+  function wiggleOff() { if (!wiggle) return; wiggle = false; $("#dAccts").classList.remove("sorting"); document.removeEventListener("pointerdown", wigOut, true); }
   $("#dAccts").addEventListener("click", function (e) { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true);
   $("#dAccts").addEventListener("pointerdown", function (e) {
     var c = e.target.closest(".acct[data-wid]"); if (!c || e.button > 0) return;
     var touch = e.pointerType === "touch";
     if (dEdit && !touch) e.preventDefault();
-    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit, hold = null, gx = 0, gy = 0, lx = sx, ly = sy;
+    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit || wiggle, hold = null, lastSwap = 0, gx = 0, gy = 0, lx = sx, ly = sy;
     var pan = c.closest("[data-pid]") || c.closest(".panel");
     function grab() { var r = c.getBoundingClientRect(); gx = sx - r.left; gy = sy - r.top; if (pan) { pan.style.position = "relative"; pan.style.zIndex = "60"; } }
     var prev = null;
@@ -3536,23 +3546,27 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       prev = cur;
     }
     function float(x, y) { c.style.transform = "none"; var r = c.getBoundingClientRect(); c.style.transform = "translate(" + (x - gx - r.left) + "px," + (y - gy - r.top) + "px) scale(1.08) rotate(-1.5deg)"; }
-    if (touch && !dEdit) {
+    if (touch && !dEdit && !wiggle) {
       c.classList.add("pressing");
-      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; grab(); c.classList.remove("pressing"); c.classList.add("dragging"); host.classList.add("sorting"); snap(); float(lx, ly); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
+      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; grab(); c.classList.remove("pressing"); c.classList.add("dragging"); wiggleOn(); snap(); float(lx, ly); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
     }
     function mv(ev) {
       lx = ev.clientX; ly = ev.clientY;
       if (!armed) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 9) { clearTimeout(hold); c.classList.remove("pressing"); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); } return; }
       if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; grab(); c.classList.add("dragging"); host.classList.add("sorting"); snap(); }
       var t = document.elementFromPoint(ev.clientX, ev.clientY), o = t && t.closest ? t.closest(".acct[data-wid]") : null;
-      if (o && o !== c && o.parentNode === host) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); flip(); }
+      if (o && o !== c && o.parentNode === host && performance.now() - lastSwap > 260) {
+        /* only swap when the pointer is well inside the other tile, and not again while the tiles are still sliding: this stops the back-and-forth bouncing */
+        var orc = o.getBoundingClientRect(), fx = (ev.clientX - orc.left) / orc.width, fy = (ev.clientY - orc.top) / orc.height;
+        if (fx > 0.22 && fx < 0.78 && fy > 0.22 && fy < 0.78) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); lastSwap = performance.now(); flip(); }
+      }
       float(ev.clientX, ev.clientY);
     }
     function up() {
       clearTimeout(hold); c.classList.remove("pressing");
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
-      if (!drag) return;
-      c.classList.remove("dragging"); host.classList.remove("sorting"); c.style.transform = ""; if (pan) { pan.style.zIndex = ""; pan.style.position = ""; } dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
+      if (!drag) { if (wiggle) { wiggleOff(); swallow = true; setTimeout(function () { swallow = false; }, 0); } return; }
+      c.classList.remove("dragging"); if (!wiggle) host.classList.remove("sorting"); c.style.transform = ""; if (pan) { pan.style.zIndex = ""; pan.style.position = ""; } dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
       var L = dlGet(); L.acct.order = [].map.call(host.querySelectorAll(".acct[data-wid]"), function (x) { return x.getAttribute("data-wid"); }); L.acct.sort = "custom";
       saveLayout(L); render();
     }
