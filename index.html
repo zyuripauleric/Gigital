@@ -796,6 +796,21 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 .tabs button svg { width: 22px; height: 22px; }
 .tile .ic svg, .act .aic svg, .sc .sic svg { width: 20px; height: 20px; }
 .chp svg, #ledgerInAll svg, .searchbar svg { width: 18px; height: 18px; }
+
+/* Compact account tiles: icon beside the name, amounts still line up across a row */
+#dAccts .acct { padding: 10px 11px 9px; gap: 2px; border-radius: 14px; }
+#dAccts .acct .an { flex-direction: row; align-items: center; gap: 8px; min-height: 2.5em; font-size: 13.5px; }
+#dAccts .acct .an .wi.lg { width: 30px; height: 30px; border-radius: 9px; flex: none; }
+#dAccts .acct .ab { margin-top: 4px; font-size: clamp(13.5px, 10cqw, 19px); }
+#dAccts .acct .as, #dAccts .acct .ao { font-size: 11.5px; line-height: 1.25; }
+@media (max-width: 699px) {
+  #dAccts { gap: 7px; }
+  #dAccts .acct { padding: 9px 9px 8px; }
+  #dAccts .acct .an { gap: 6px; font-size: 12.5px; min-height: 2.5em; }
+  #dAccts .acct .an .wi.lg { width: 26px; height: 26px; border-radius: 8px; }
+  #dAccts .acct .ab { font-size: clamp(13px, 12cqw, 16.5px); }
+  #dAccts .acct .as, #dAccts .acct .ao { font-size: 11px; }
+}
 </style>
 <script>
 (function () {
