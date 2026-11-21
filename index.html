@@ -629,7 +629,10 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 .ledgerbar select { flex: 1 1 auto; width: auto; min-width: 0; min-height: 36px; background: var(--glass-strong); font-weight: 600; }
 .ledgerbar .btn.icon { flex: none; width: 36px; min-height: 36px; font-size: 16px; }
 .ledgerinc { flex: 1 1 100%; margin-top: -6px; }
-.ledgerinc .chk { margin-top: 0; min-height: 28px; font-size: 12.5px; color: var(--muted); }
+#ledgerInAll[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--glass-strong)); }
+#ledgerInAll[aria-pressed="false"] { color: var(--muted); }
+#ledgerInAll .off { display: none; }
+#ledgerInAll[aria-pressed="false"] .off { display: inline; }
 .ledgerinc .hint { display: block; font-size: 12.5px; }
 .chk { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-top: 8px; font-size: 13.5px; }
 .chk input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
@@ -745,9 +748,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       <button type="button" class="btn icon" id="ledgerNew" aria-label="New ledger" title="New ledger">+</button>
       <button type="button" class="btn icon" id="ledgerRen" aria-label="Rename this ledger" title="Rename this ledger">✎</button>
       <button type="button" class="btn icon" id="ledgerDel" aria-label="Delete this ledger" title="Delete this ledger">🗑</button>
+      <button type="button" class="btn icon" id="ledgerInAll" aria-pressed="true" aria-label="Included in All ledgers" title="Included in “All ledgers”"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/><path class="off" d="M4 20 20 4"/></svg></button>
     </div>
-    <div class="ledgerinc">
-      <label class="chk" id="ledgerInAllWrap"><input type="checkbox" id="ledgerInAll" checked><span>Include this ledger in “All ledgers”</span></label>
+    <div class="ledgerinc" id="ledgerIncBox" hidden>
       <span class="hint" id="ledgerNote"></span>
     </div>
     <p id="status" class="status" role="status">Loading your wallets…</p>
@@ -1244,7 +1247,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   if (!LEDGERS.some(function (l) { return l.id === "main"; })) LEDGERS.unshift({ id: "main", name: "Ledger 1" });
   try { var lcur = localStorage.getItem("wl-ledger"); if (lcur === "all" || LEDGERS.some(function (l) { return l.id === lcur; })) ledgerId = lcur; } catch (e) {}
   function inAllOK(id) { var ok = true; LEDGERS.forEach(function (l) { if (l.id === id && l.inAll === false) ok = false; }); return ok; }
-  function inScope(k, x) { var l = scopeOf(k, x); return ledgerId === "all" ? inAllOK(l) : l === ledgerId; }
+  function inScope(k, x) {
+    var l = scopeOf(k, x), l2 = l;
+    /* a transfer between ledgers (for example paying a card in another ledger) shows in both of them */
+    if (k === "tx" && x && x.kind === "xfer" && x.to) l2 = wlMap()[x.to] || l;
+    return ledgerId === "all" ? (inAllOK(l) || inAllOK(l2)) : (l === ledgerId || l2 === ledgerId);
+  }
   function writeLedger() { return ledgerId === "all" ? "main" : ledgerId; }
   function ledgerName(id) { var n = ""; LEDGERS.forEach(function (l) { if (l.id === id) n = l.name; }); return n; }
   function wlMap() { if (!WLM) { WLM = {}; RAW.wallets.forEach(function (w) { WLM[w.id] = w.ledger || "main"; }); } return WLM; }
@@ -1267,6 +1275,30 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     Object.defineProperty(state, k, { configurable: true, enumerable: true, get: function () { return viewOf(k); }, set: function (v) { setView(k, v); } });
   });
   function saveLedgers() { try { localStorage.setItem("wl-ledgers", JSON.stringify(LEDGERS)); localStorage.setItem("wl-ledger", ledgerId); } catch (e) {} }
+  /* accounts of every ledger, split into Debit/cash accounts and Credit cards, for the "To account" lists */
+  function acctOptions(exceptId, payFrom) {
+    var multi = LEDGERS.length > 1, order = LEDGERS.map(function (l) { return l.id; }), groups = [], idx = {};
+    if (ledgerId !== "all") order = [ledgerId].concat(order.filter(function (i) { return i !== ledgerId; }));
+    RAW.wallets.forEach(function (w) {
+      if (w.id === exceptId || (payFrom && isCredit(w))) return;
+      var l = w.ledger || "main", cr = isCredit(w), key = l + "|" + (cr ? "c" : "d");
+      if (!idx[key]) { idx[key] = { l: l, cr: cr, items: [] }; groups.push(idx[key]); }
+      idx[key].items.push(w);
+    });
+    groups.sort(function (a, b) { return (order.indexOf(a.l) - order.indexOf(b.l)) || ((a.cr ? 1 : 0) - (b.cr ? 1 : 0)); });
+    return groups.map(function (g) {
+      var label = (g.cr ? "Credit cards" : "Debit, bank & cash") + (multi ? " · " + ledgerName(g.l) : "");
+      return '<optgroup label="' + esc(label) + '">' + g.items.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + " (" + x.cur + ")</option>"; }).join("") + "</optgroup>";
+    }).join("");
+  }
+  function isLocalW(id) { var w = wmap[id], l = w && (w.ledger || "main"); return !!w && (ledgerId === "all" ? inAllOK(l) : l === ledgerId); }
+  function fillToSel(toEl, fromEl) {
+    var from = fromEl.value, prev = toEl.value;
+    if (toEl.getAttribute("data-from") === from && toEl.options.length) return;
+    toEl.innerHTML = acctOptions(from, false); toEl.setAttribute("data-from", from);
+    if (prev && prev !== from && Array.prototype.some.call(toEl.options, function (o) { return o.value === prev; })) toEl.value = prev;
+  }
+  function wName(id) { var w = wmap[id]; if (!w) return ""; var l = w.ledger || "main"; return esc(w.name) + (ledgerId !== "all" && l !== ledgerId ? " (" + esc(ledgerName(l)) + ")" : ""); }
   function ledgerOptions(sel) { return LEDGERS.map(function (l) { return '<option value="' + esc(l.id) + '"' + (l.id === sel ? " selected" : "") + ">" + esc(l.name) + "</option>"; }).join(""); }
   try { var sc = localStorage.getItem("wl-cur"); if (CODES.indexOf(sc) >= 0) state.disp = sc; } catch (e) {}
   state.locks = {}; state.rsrc = { s: "Default", d: "" };
@@ -1352,7 +1384,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function validR(t) { return validT(t) && !wmap[t.wallet].noRep; }
   function validT(t) { return t && typeof t.date === "string" && typeof t.amount === "number" && isFinite(t.amount) && (t.kind === "in" || t.kind === "out" || t.kind === "xfer") && wmap[t.wallet] && (t.kind !== "xfer" || wmap[t.to]); }
   var catMap = {};
-  function buildMap() { wmap = {}; state.wallets.forEach(function (w) { wmap[w.id] = w; }); var u = {}; state.tx.forEach(function (t) { if (t && t.cat) u[t.cat] = 1; }); catMap = {};
+  function buildMap() { wmap = {}; RAW.wallets.forEach(function (w) { wmap[w.id] = w; }); state.wallets.forEach(function (w) { wmap[w.id] = w; }); var u = {}; state.tx.forEach(function (t) { if (t && t.cat) u[t.cat] = 1; }); catMap = {};
     /* every category keeps its own colour: your expense list first, then older names found in transactions, then income */
     var seq = CATS.out.slice(); Object.keys(u).sort().forEach(function (k) { if (seq.indexOf(k) < 0 && CATS["in"].indexOf(k) < 0) seq.push(k); });
     CATS["in"].forEach(function (k) { if (seq.indexOf(k) < 0) seq.push(k); });
@@ -1362,9 +1394,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     state.wallets.forEach(function (w) { b[w.id] = Number(w.opening) || 0; });
     state.tx.forEach(function (t) {
       if (!validT(t) || (upto && t.date > upto)) return;
-      if (t.kind === "in") b[t.wallet] += t.amount;
-      else if (t.kind === "out") b[t.wallet] -= t.amount;
-      else { b[t.wallet] -= t.amount; b[t.to] += Number(t.toAmount) || 0; }
+      var hf = b[t.wallet] !== undefined, ht = b[t.to] !== undefined;
+      if (t.kind === "in") { if (hf) b[t.wallet] += t.amount; }
+      else if (t.kind === "out") { if (hf) b[t.wallet] -= t.amount; }
+      else { if (hf) b[t.wallet] -= t.amount; if (ht) b[t.to] += Number(t.toAmount) || 0; }
     });
     return b;
   }
@@ -1536,7 +1569,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   var tEditId = null, tEditOrig = null;
   function txTitle(t) {
-    if (t.kind === "xfer") return "Transfer · " + esc(wmap[t.wallet].name) + " → " + esc(wmap[t.to].name);
+    if (t.kind === "xfer") return "Transfer · " + wName(t.wallet) + " → " + wName(t.to);
     return esc(t.cat || (t.kind === "in" ? "Income" : "Expense")) + (t.sub ? ' <span class="subt">\u203a ' + esc(t.sub) + "</span>" : "");
   }
   function extra(t) {
@@ -1572,16 +1605,14 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   function fillWalletSelects() {
     var opts = state.wallets.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name) + " (" + w.cur + ")</option>"; }).join("");
-    ["#wSel", "#toSel"].forEach(function (s) {
-      var el = $(s), prev = el.value; el.innerHTML = opts;
-      if (prev && wmap[prev]) el.value = prev;
-      else if (s === "#wSel" && state.lastWallet && wmap[state.lastWallet]) el.value = state.lastWallet;
-    });
-    var f = $("#wSel").value, t = $("#toSel");
-    if (t.value === f && state.wallets.length > 1) { var alt = state.wallets.filter(function (w) { return w.id !== f; })[0]; if (alt) t.value = alt.id; }
+    var el = $("#wSel"), prev = el.value; el.innerHTML = opts;
+    if (prev && isLocalW(prev)) el.value = prev;
+    else if (state.lastWallet && isLocalW(state.lastWallet)) el.value = state.lastWallet;
+    $("#toSel").removeAttribute("data-from"); fillToSel($("#toSel"), el);
   }
   function curKind() { return $("#kXfer").checked ? "xfer" : $("#kIn").checked ? "in" : "out"; }
   function updateForm() {
+    fillToSel($("#toSel"), $("#wSel"));
     var k = curKind(), w = wmap[$("#wSel").value], to = wmap[$("#toSel").value];
     $("#xferRow").hidden = k !== "xfer"; $("#catBox").hidden = k === "xfer";
     $("#wLbl").textContent = k === "xfer" ? "From wallet" : "Wallet";
@@ -1919,7 +1950,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     document.querySelector('label[for="aXfer"]').textContent = isCredit(w) ? "Pay card" : "Transfer";
     $("#aOut").checked = true; $("#aAmt").value = ""; $("#aAmt2").value = ""; $("#aCat").value = ""; $("#aSub").value = ""; $("#aDate").value = todayStr;
     $("#aPay").value = isCredit(w) ? "Credit card" : "Cash"; $("#aPayee").value = ""; $("#aLabels").value = ""; $("#aNote").value = ""; $("#aErr").textContent = "";
-    $("#aTo").innerHTML = state.wallets.filter(function (x) { return x.id !== w.id && (!isCredit(w) || !isCredit(x)); }).map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + " (" + x.cur + ")</option>"; }).join("");
+    $("#aTo").innerHTML = acctOptions(w.id, isCredit(w));
     updateAcctTx();
   }
   function updateAcctTx() {
@@ -1966,7 +1997,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       t.wallet = o2.id; t.to = w.id; t.toAmount = amtCard;
       t.amount = o2.cur === w.cur ? amtCard : (isFinite(rr) && rr > 0 ? rnd(rr, o2.cur) : rnd(conv(raw, w.cur, o2.cur), o2.cur));
     }
-    err.textContent = ""; $("#aSave").disabled = true; state.lastWallet = t.wallet;
+    err.textContent = ""; $("#aSave").disabled = true; if (isLocalW(t.wallet)) state.lastWallet = t.wallet;
     put("t", t).then(function (id) {
       $("#aSave").disabled = false;
       if (!id) { err.textContent = "Could not save the transaction. Try again."; return; }
@@ -2031,7 +2062,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function openRecDlg() {
     if (!state.wallets.length) { openAcctDlg(null); return; }
     $("#rAcct").innerHTML = state.wallets.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + " (" + x.cur + ")</option>"; }).join("");
-    var pick = (state.lastWallet && wmap[state.lastWallet] ? state.lastWallet : "") || (state.wallets.filter(isCredit)[0] || state.wallets[0]).id;
+    var pick = (state.lastWallet && isLocalW(state.lastWallet) ? state.lastWallet : "") || (state.wallets.filter(isCredit)[0] || state.wallets[0]).id;
     dlgId = pick; $("#rAcct").value = pick;
     setRType(rType);
     if (!recDlg.open) recDlg.showModal();
@@ -2328,7 +2359,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function payCard(id) {
     var w = wmap[id]; if (!w) return;
     openAcctDlg(id, "tx");
-    var srcs = state.wallets.filter(function (x) { return !isCredit(x); });
+    var loc = state.wallets.filter(function (x) { return !isCredit(x); }), srcs = loc.concat(RAW.wallets.filter(function (x) { return !isCredit(x) && loc.indexOf(x) < 0; }));
     if (!srcs.length) { $("#aErr").textContent = "Add a bank or cash account to pay from."; return; }
     var pref = srcs.filter(function (x) { return x.id === state.lastWallet; })[0] || srcs[0], owed = Math.max(0, -(balances()[id] || 0));
     $("#aXfer").checked = true; $("#aTo").value = pref.id; $("#aAmt").value = owed ? round2(owed) : ""; $("#aNote").value = "Credit card payment";
@@ -3280,6 +3311,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   var txDlg = $("#txDlg"), eId = null, eArm = null;
   function eKind() { return $("#eXfer").checked ? "xfer" : $("#eIn").checked ? "in" : "out"; }
   function eUpdate() {
+    fillToSel($("#eTo"), $("#eW"));
     var k = eKind(), w = wmap[$("#eW").value], to = wmap[$("#eTo").value];
     $("#eXferRow").hidden = k !== "xfer"; $("#eCatBox").hidden = k === "xfer";
     $("#eWL").textContent = k === "xfer" ? "From wallet" : "Wallet";
@@ -3300,11 +3332,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var t = null; state.tx.forEach(function (x) { if (x.id === id) t = x; });
     if (!t || !validT(t)) return;
     eId = id; actSel = null;
-    var opts = state.wallets.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name) + " (" + w.cur + ")</option>"; }).join("");
-    $("#eW").innerHTML = opts; $("#eTo").innerHTML = opts;
+    var wl = state.wallets.slice(); if (wmap[t.wallet] && wl.indexOf(wmap[t.wallet]) < 0) wl.push(wmap[t.wallet]);
+    $("#eW").innerHTML = wl.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name) + " (" + w.cur + ")" + (isLocalW(w.id) ? "" : " · " + esc(ledgerName(w.ledger || "main"))) + "</option>"; }).join("");
     $("#eOut").checked = t.kind === "out"; $("#eIn").checked = t.kind === "in"; $("#eXfer").checked = t.kind === "xfer";
-    $("#eW").value = t.wallet; if (t.kind === "xfer") $("#eTo").value = t.to;
-    else { var alt = state.wallets.filter(function (w) { return w.id !== t.wallet; })[0]; if (alt) $("#eTo").value = alt.id; }
+    $("#eW").value = t.wallet; $("#eTo").removeAttribute("data-from"); fillToSel($("#eTo"), $("#eW"));
+    if (t.kind === "xfer") $("#eTo").value = t.to;
     $("#eAmt").value = t.amount; $("#eAmt2").value = t.kind === "xfer" && wmap[t.to].cur !== wmap[t.wallet].cur ? t.toAmount : "";
     $("#eCat").value = t.cat || ""; $("#eSub").value = t.sub || ""; $("#eNote").value = t.note || ""; $("#eDate").value = t.date;
     $("#eErr").textContent = ""; $("#eDel").classList.remove("arm"); $("#eDel").textContent = "Delete"; $("#eSave").disabled = false;
@@ -3712,10 +3744,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     function fill() {
       sel.innerHTML = ledgerOptions(ledgerId) + '<option value="all"' + (ledgerId === "all" ? " selected" : "") + ">All ledgers (combined)</option>";
       var all = ledgerId === "all";
-      $("#ledgerInAllWrap").hidden = all; $("#ledgerInAll").checked = inAllOK(ledgerId);
+      var inOn = inAllOK(ledgerId), tg = $("#ledgerInAll");
+      tg.hidden = all || LEDGERS.length < 2; tg.setAttribute("aria-pressed", String(inOn));
+      tg.title = inOn ? "Included in “All ledgers”. Tap to leave this ledger out." : "Not in “All ledgers”. Tap to include it.";
+      tg.setAttribute("aria-label", tg.title);
       var inc = LEDGERS.filter(function (l) { return l.inAll !== false; }).map(function (l) { return l.name; });
-      $("#ledgerNote").textContent = all ? (inc.length ? "Combined: " + inc.join(" + ") + ". New accounts go to the ledger you choose in the account form." : "No ledger is included. Switch one on in its own view.") : "";
-      $("#ledgerNote").hidden = !all;
+      $("#ledgerNote").textContent = all ? (inc.length ? "Combined: " + inc.join(" + ") + ". New accounts go to the ledger you choose in the account form." : "No ledger is included. Switch one on in its own view.") : (!inOn && LEDGERS.length > 1 ? "Not counted in “All ledgers”." : "");
+      $("#ledgerNote").hidden = !$("#ledgerNote").textContent; $("#ledgerIncBox").hidden = $("#ledgerNote").hidden;
     }
     function name(id) { return ledgerName(id); }
     function taken(n, except) { return LEDGERS.some(function (l) { return l.id !== except && l.name.toLowerCase() === n.toLowerCase(); }); }
@@ -3724,8 +3759,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       fill(); render();
     }
     sel.addEventListener("change", function () { switchTo(sel.value); });
-    $("#ledgerInAll").addEventListener("change", function () {
-      var on = this.checked; LEDGERS.forEach(function (l) { if (l.id === ledgerId) l.inAll = on; }); saveLedgers(); bumpView(); fill(); render();
+    $("#ledgerInAll").addEventListener("click", function () {
+      var on = !inAllOK(ledgerId); LEDGERS.forEach(function (l) { if (l.id === ledgerId) l.inAll = on; }); saveLedgers(); bumpView(); fill(); render();
+      setStatus("“" + ledgerName(ledgerId) + "” is " + (on ? "now included in" : "left out of") + " All ledgers.");
     });
     $("#ledgerNew").addEventListener("click", function () {
       var n = window.prompt("Name the new ledger (for example, a person's name):", ""); if (n == null) return; n = n.trim().slice(0, 30); if (!n) return;
