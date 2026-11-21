@@ -623,6 +623,15 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .chiprow > #disp { flex: 0 0 auto; width: auto; max-width: 42%; min-height: 44px; }
   .chiprow .rchip { padding: 0 12px; gap: 8px; }
 }
+/* ledgers, hidden accounts, not-in-reports accounts */
+.ledgerbar { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ledgerbar select { flex: 1 1 auto; width: auto; min-width: 0; min-height: 36px; background: var(--glass-strong); font-weight: 600; }
+.ledgerbar .btn.icon { flex: none; width: 36px; min-height: 36px; font-size: 16px; }
+.chk { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-top: 8px; font-size: 13.5px; }
+.chk input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+#dAccts .acct.ishid, .ctile.ishid { opacity: 0.5; border-style: dashed; }
+#dAccts .acct.norep .as::after { content: "Not in reports"; display: block; color: var(--accent); }
+#aHidTgl { margin-left: auto; }
 /* phones: button size */
 @media (max-width: 699px) {
   :root { --ctl-h: 36px; --fl-pad: 5px; }
@@ -727,6 +736,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       <label class="sr" for="disp">Show amounts in</label>
       <select id="disp"></select>
     </div>
+    <div class="ledgerbar">
+      <label class="sr" for="ledgerSel">Ledger</label><select id="ledgerSel"></select>
+      <button type="button" class="btn icon" id="ledgerNew" aria-label="New ledger" title="New ledger">+</button>
+      <button type="button" class="btn icon" id="ledgerRen" aria-label="Rename this ledger" title="Rename this ledger">✎</button>
+      <button type="button" class="btn icon" id="ledgerDel" aria-label="Delete this ledger" title="Delete this ledger">🗑</button>
+    </div>
     <p id="status" class="status" role="status">Loading your wallets…</p>
     <div class="pills" id="pills" aria-label="Snapshot"></div>
   </header>
@@ -779,7 +794,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         <div class="addtray" id="dTray" hidden></div>
         <div id="dGrid" class="cgrid">
 <div class="dp" data-pid="accts"><div class="dh">⠿ My accounts</div><section class="panel" aria-label="My accounts">
-          <div class="phead"><h3>My accounts</h3><span class="asort"><label for="aSort">Sort</label><select id="aSort"><option value="custom">My order (drag)</option><option value="name">Name A–Z</option><option value="bal-desc">Balance: high to low</option><option value="bal-asc">Balance: low to high</option><option value="type">Type</option></select></span><span class="acsz"><label for="aSize">Cell size</label><input type="range" id="aSize" min="120" max="340" step="10"></span><span class="hint" id="aCount"></span></div>
+          <div class="phead"><h3>My accounts</h3><span class="asort"><label for="aSort">Sort</label><select id="aSort"><option value="custom">My order (drag)</option><option value="name">Name A–Z</option><option value="bal-desc">Balance: high to low</option><option value="bal-asc">Balance: low to high</option><option value="type">Type</option></select></span><span class="acsz"><label for="aSize">Cell size</label><input type="range" id="aSize" min="120" max="340" step="10"></span><button type="button" class="btn sm" id="aHidTgl" hidden aria-pressed="false"></button><span class="hint" id="aCount"></span></div>
           <div id="dAccts"></div>
         </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="cards"><div class="dh">⠿ Credit cards</div><section class="panel" aria-label="Credit cards">
@@ -1114,6 +1129,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
             <div class="field"><label for="wLimit">Credit limit (optional)</label><input type="text" id="wLimit" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="row2" style="margin-top:10px"><div class="field"><label for="wStmt">Statement day (1-31)</label><input type="text" id="wStmt" inputmode="numeric" maxlength="2" placeholder="e.g. 15" autocomplete="off"></div><div class="field"><label for="wDue">Payment due day (1-31)</label><input type="text" id="wDue" inputmode="numeric" maxlength="2" placeholder="e.g. 5" autocomplete="off"></div></div>
           </div>
+          <div class="field"><label for="wLedger">Ledger</label><select id="wLedger"></select></div>
+          <label class="chk"><input type="checkbox" id="wShow" checked><span>Show on the dashboard</span></label>
+          <label class="chk"><input type="checkbox" id="wInRep" checked><span>Include in reports and net worth</span></label>
           <p class="err" id="wErr" role="alert"></p>
           <div class="formbtns"><button class="btn primary" type="submit" id="wAdd">Add account</button><button class="btn" type="button" id="wCancel">Cancel</button><button class="btn" type="button" id="wDel" hidden>Delete account</button></div>
         </form>
@@ -1211,10 +1229,37 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   var todayStr = ds(now.getFullYear(), now.getMonth(), now.getDate());
   var state = { y: now.getFullYear(), m: now.getMonth(), sel: todayStr, view: "cal", disp: "PHP", wallets: [], tx: [], col: null, wcol: null, loaded: false,
     rates: Object.assign({}, DEF_RATES), budget: { amount: 0, cur: "PHP", goal: 0 }, repInit: false, wSel: null, sortNew: true, lastWallet: null, rep: null };
+
+  /* ===== Ledgers: separate sets of accounts (for example one per person). The app only ever sees the active ledger's slice of the stored data. ===== */
+  var LEDGERS = [{ id: "main", name: "Ledger 1" }], ledgerId = "main", RAW = { wallets: [], tx: [], recs: [], goals: [], budgets: [] }, VIEW = {}, WLM = null;
+  try { var lj = JSON.parse(localStorage.getItem("wl-ledgers")); if (Array.isArray(lj)) { var lseen = {}; var lk = lj.filter(function (l) { return l && l.id && l.name && !lseen[l.id] && (lseen[l.id] = 1); }); if (lk.length) LEDGERS = lk; } } catch (e) {}
+  if (!LEDGERS.some(function (l) { return l.id === "main"; })) LEDGERS.unshift({ id: "main", name: "Ledger 1" });
+  try { var lcur = localStorage.getItem("wl-ledger"); if (LEDGERS.some(function (l) { return l.id === lcur; })) ledgerId = lcur; } catch (e) {}
+  function wlMap() { if (!WLM) { WLM = {}; RAW.wallets.forEach(function (w) { WLM[w.id] = w.ledger || "main"; }); } return WLM; }
+  function scopeOf(k, x) { if (k === "tx" || k === "recs") { var l = x && wlMap()[x.wallet]; return l || (x && x.ledger) || "main"; } return (x && x.ledger) || "main"; }
+  function bumpView() { WLM = null; VIEW = {}; }
+  function stampLedger(k, x) { if (x && typeof x === "object" && (k === "wallets" || k === "goals" || k === "budgets") && !x.ledger) x.ledger = ledgerId; return x; }
+  function viewOf(k) {
+    var v = VIEW[k]; if (v) return v;
+    v = RAW[k].filter(function (x) { return scopeOf(k, x) === ledgerId; });
+    v.push = function () {
+      for (var i = 0; i < arguments.length; i++) { var x = stampLedger(k, arguments[i]); RAW[k].push(x); if (scopeOf(k, x) === ledgerId) Array.prototype.push.call(v, x); }
+      WLM = null; return v.length;
+    };
+    VIEW[k] = v; return v;
+  }
+  function setView(k, arr) { var keep = RAW[k].filter(function (x) { return scopeOf(k, x) !== ledgerId; }); RAW[k] = keep.concat((arr || []).map(function (x) { return stampLedger(k, x); })); bumpView(); }
+  function setRaw(k, arr) { RAW[k] = Array.isArray(arr) ? arr : []; bumpView(); }
+  ["wallets", "tx", "recs", "goals", "budgets"].forEach(function (k) {
+    RAW[k] = Array.isArray(state[k]) ? state[k] : [];
+    Object.defineProperty(state, k, { configurable: true, enumerable: true, get: function () { return viewOf(k); }, set: function (v) { setView(k, v); } });
+  });
+  function saveLedgers() { try { localStorage.setItem("wl-ledgers", JSON.stringify(LEDGERS)); localStorage.setItem("wl-ledger", ledgerId); } catch (e) {} }
+  function ledgerOptions(sel) { return LEDGERS.map(function (l) { return '<option value="' + esc(l.id) + '"' + (l.id === sel ? " selected" : "") + ">" + esc(l.name) + "</option>"; }).join(""); }
   try { var sc = localStorage.getItem("wl-cur"); if (CODES.indexOf(sc) >= 0) state.disp = sc; } catch (e) {}
   state.locks = {}; state.rsrc = { s: "Default", d: "" };
   try { var rs = JSON.parse(localStorage.getItem("wl-rsrc")); if (rs && rs.s) state.rsrc = rs; } catch (e) {}
-  state.budgets = []; try { var ub = JSON.parse(localStorage.getItem("wl-budgets")); if (Array.isArray(ub)) state.budgets = ub; } catch (e) {}
+  state.budgets = []; try { var ub = JSON.parse(localStorage.getItem("wl-budgets")); if (Array.isArray(ub)) setRaw("budgets", ub); } catch (e) {}
   state.dl = null; try { var dj = JSON.parse(localStorage.getItem("wl-dlayout")); if (dj && Array.isArray(dj.order)) state.dl = dj; } catch (e) {}
   state.rl = null; try { var rj = JSON.parse(localStorage.getItem("wl-rlayout")); if (rj && Array.isArray(rj.order)) state.rl = rj; } catch (e) {}
   state.cl = null; try { var cj = JSON.parse(localStorage.getItem("wl-clayout")); if (cj && Array.isArray(cj.order)) state.cl = cj; } catch (e) {}
@@ -1292,6 +1337,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Data ===== */
   function isCredit(w) { return !!w && (w.type === "Credit card" || w.type === "Card"); }
   var wmap = {};
+  function validR(t) { return validT(t) && !wmap[t.wallet].noRep; }
   function validT(t) { return t && typeof t.date === "string" && typeof t.amount === "number" && isFinite(t.amount) && (t.kind === "in" || t.kind === "out" || t.kind === "xfer") && wmap[t.wallet] && (t.kind !== "xfer" || wmap[t.to]); }
   var catMap = {};
   function buildMap() { wmap = {}; state.wallets.forEach(function (w) { wmap[w.id] = w; }); var u = {}; state.tx.forEach(function (t) { if (t && t.cat) u[t.cat] = 1; }); catMap = {};
@@ -1310,11 +1356,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     });
     return b;
   }
-  function netWorth(b) { return state.wallets.reduce(function (a, w) { return a + conv(b[w.id], w.cur); }, 0); }
+  function netWorth(b) { return state.wallets.reduce(function (a, w) { return w.noRep ? a : a + conv(b[w.id], w.cur); }, 0); }
   function byDay() {
     var map = {};
     state.tx.forEach(function (t) {
-      if (!validT(t)) return;
+      if (!validR(t)) return;
       var d = map[t.date] || (map[t.date] = { inc: 0, exp: 0, net: 0, n: 0, list: [] });
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date);
       if (t.kind === "in") d.inc += a; else if (t.kind === "out") d.exp += a;
@@ -1323,11 +1369,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     return map;
   }
   function saveLocal() {
-    try { localStorage.setItem("wl-wallets", JSON.stringify(state.wallets)); localStorage.setItem("wl-tx", JSON.stringify(state.tx)); localStorage.setItem("wl-goals", JSON.stringify(state.goals)); localStorage.setItem("wl-recs", JSON.stringify(state.recs)); } catch (e) {}
+    try { localStorage.setItem("wl-wallets", JSON.stringify(RAW.wallets)); localStorage.setItem("wl-tx", JSON.stringify(RAW.tx)); localStorage.setItem("wl-goals", JSON.stringify(RAW.goals)); localStorage.setItem("wl-recs", JSON.stringify(RAW.recs)); } catch (e) {}
   }
   function failMsg(e) { setStatus("Could not save that (" + ((e && e.code) || "error") + "). Try again.", true); return false; }
   function put(kind, obj) {
     var id = obj.id || gid(kind), o = Object.assign({}, obj); delete o.id;
+    if ((kind === "w" || kind === "g") && !o.ledger) o.ledger = ledgerId;
     var c = colOf(kind);
     if (c) return c.doc(id).set(o).then(function () { return id; }).catch(function (e) { failMsg(e); return null; });
     o.id = id; state[keyOf(kind)].push(o); saveLocal(); render();
@@ -1401,7 +1448,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function monthTotals(days) {
     var mp = monthPrefix(), r = { inc: 0, exp: 0, cats: {}, n: 0, big: null, spendDays: 0 };
     state.tx.forEach(function (t) {
-      if (!validT(t) || t.date.indexOf(mp) !== 0) return;
+      if (!validR(t) || t.date.indexOf(mp) !== 0) return;
       r.n++;
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date);
       if (t.kind === "in") r.inc += a;
@@ -1819,11 +1866,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var w = wmap[id]; if (!w) return;
     wEditId = id; $("#wName").value = w.name; $("#wType").value = isCredit(w) ? "Credit card" : w.type; ensureOpt("#wCur", w.cur); $("#wCur").value = w.cur; $("#wOpen").value = isCredit(w) ? (w.opening ? -w.opening : "") : (w.opening || ""); $("#wLast4").value = w.last4 || ""; $("#wExp").value = w.exp || ""; setWIcon(w.icon); toggleWIcoPanel(false);
     $("#wLimit").value = w.limit || ""; $("#wStmt").value = w.stmt || ""; $("#wDue").value = w.due || ""; updateWType(); $("#wFormTitle").textContent = "Edit account"; $("#wAdd").textContent = "Save changes"; $("#wDel").hidden = false; $("#wErr").textContent = "";
+    $("#wLedger").innerHTML = ledgerOptions(w.ledger || "main"); $("#wShow").checked = !w.hidden; $("#wInRep").checked = !w.noRep;
   }
   function cancelWalletEdit() {
     wEditId = null; $("#wFormTitle").textContent = "Add account"; $("#wAdd").textContent = "Add account"; $("#wDel").hidden = true;
     setWIcon(""); toggleWIcoPanel(false); $("#wName").value = ""; $("#wOpen").value = ""; $("#wLast4").value = ""; $("#wExp").value = ""; $("#wErr").textContent = ""; $("#wDel").textContent = "Delete account"; $("#wDel").classList.remove("arm");
     $("#wType").value = "Bank"; $("#wLimit").value = ""; $("#wStmt").value = ""; $("#wDue").value = ""; updateWType(); $("#wCur").value = state.disp in CUR ? state.disp : "PHP"; $("#wAdd").disabled = false;
+    $("#wLedger").innerHTML = ledgerOptions(ledgerId); $("#wShow").checked = true; $("#wInRep").checked = true;
   }
   /* popup for adding and editing accounts */
   var acctDlg = $("#acctDlg"), dlgId = null;
@@ -1962,6 +2011,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   $("#acctClose").addEventListener("click", closeAcctDlg);
   $("#wCancel").addEventListener("click", closeAcctDlg);
   $("#dAccts").addEventListener("click", function (e) { if (e.target.closest("#seedBtn")) seedExamples(); });
+  $("#aHidTgl").addEventListener("click", function () { state.showHid = !state.showHid; renderAccounts(); renderCards(); });
   document.addEventListener("click", function (e) { if (e.target.closest("[data-addacct]")) openAcctDlg(null); });
   /* ===== Recurring: repeats, installments, subscriptions ===== */
   var rType = "installment", recBusy = false, rArm = null;
@@ -2285,7 +2335,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var name = $("#wName").value.trim(), err = $("#wErr"), ot = $("#wOpen").value.trim(), open = ot === "" ? 0 : evalExpr(ot, $("#wCur").value);
     if (!name) { err.textContent = "Give the account a name."; $("#wName").focus(); return; }
     if (!isFinite(open)) { err.textContent = "The opening balance must be a number."; $("#wOpen").focus(); return; }
-    var cur = $("#wCur").value, ex = $("#wExp").value.trim(), o = { name: name, type: $("#wType").value, cur: cur, opening: rnd(($("#wType").value === "Credit card" ? -open : open) + 0, cur), last4: $("#wLast4").value.replace(/\D/g, "").slice(0, 4), exp: ex, icon: wIcon };
+    var cur = $("#wCur").value, ex = $("#wExp").value.trim(), o = { name: name, type: $("#wType").value, cur: cur, opening: rnd(($("#wType").value === "Credit card" ? -open : open) + 0, cur), last4: $("#wLast4").value.replace(/\D/g, "").slice(0, 4), exp: ex, icon: wIcon, ledger: $("#wLedger").value || ledgerId, hidden: !$("#wShow").checked, noRep: !$("#wInRep").checked };
     if (ex && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(ex)) { err.textContent = "Expiry should look like 08/27."; $("#wExp").focus(); return; }
     if ($("#wType").value === "Credit card") {
       var lt = $("#wLimit").value.trim(), lim = lt === "" ? 0 : evalExpr(lt, cur), sd = parseInt($("#wStmt").value, 10) || 0, dd = parseInt($("#wDue").value, 10) || 0;
@@ -2336,7 +2386,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     };
   }
   function compute(from, to) {
-    var rows = state.tx.filter(function (t) { return validT(t) && t.date >= from && t.date <= to; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.createdAt || 0) - (b.createdAt || 0); });
+    var rows = state.tx.filter(function (t) { return validR(t) && t.date >= from && t.date <= to; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.createdAt || 0) - (b.createdAt || 0); });
     var r = { rows: rows, inc: 0, exp: 0, n: rows.length, expC: {}, incC: {}, wal: {}, daily: [], span: Math.round((parseD(to) - parseD(from)) / 86400000) + 1, big: null }, dm = {}, cum = 0;
     rows.forEach(function (t) {
       var w = wmap[t.wallet], a = conv(t.amount, w.cur, null, t.date), x = r.wal[w.id] || (r.wal[w.id] = { name: w.name, inc: 0, exp: 0 });
@@ -2774,7 +2824,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Rates ===== */
   var rateNote = "";
   var pcol = null, prefsReady = false;
-  function syncPrefs() { if (pcol) try { pcol.doc("main").set({ budget: state.budget, rates: state.rates, locks: state.locks, rsrc: state.rsrc, eom: state.eom, budgets: state.budgets, cats: state.cats, dlayout: state.dl, rlayout: state.rl, clayout: state.cl }); } catch (e) {} }
+  function syncPrefs() { if (pcol) try { pcol.doc("main").set({ budget: state.budget, rates: state.rates, locks: state.locks, rsrc: state.rsrc, eom: state.eom, budgets: RAW.budgets, cats: state.cats, dlayout: state.dl, rlayout: state.rl, clayout: state.cl }); } catch (e) {} }
   function saveLocks() { try { localStorage.setItem("wl-locks", JSON.stringify(state.locks)); } catch (e) {} syncPrefs(); }
   /* r = last live rate captured in that month; prov = no capture exists, so keep a provisional lock that is replaced by the official month-end rate */
   function mkLock(r, prov) {
@@ -2914,7 +2964,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function spend(from, to) {
     var r = { total: 0, cats: {} };
     state.tx.forEach(function (t) {
-      if (!validT(t) || t.kind !== "out" || t.date < from || t.date > to) return;
+      if (!validR(t) || t.kind !== "out" || t.date < from || t.date > to) return;
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date), k = t.cat || "Other"; r.total += a; r.cats[k] = (r.cats[k] || 0) + a;
     });
     return r;
@@ -2942,7 +2992,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function renderTiles() {
     var R = fRange(), mo = fMonths(R), inc = 0, exp = 0, nw = netWorth(balances()), budget = budgetNow(), gl = state.budget.goal > 0 ? conv(state.budget.goal, state.budget.cur) : 0;
     state.tx.forEach(function (t) {
-      if (!validT(t) || !inRange(t.date, R)) return;
+      if (!validR(t) || !inRange(t.date, R)) return;
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date); if (t.kind === "in") inc += a; else if (t.kind === "out") exp += a;
     });
     var items = [
@@ -2962,7 +3012,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     for (i = n - 1; i >= 0; i--) keys.push(mAdd(cur, -i));
     keys.forEach(function (k) { m[k] = { k: k, inc: 0, exp: 0 }; });
     state.tx.forEach(function (t) {
-      if (!validT(t) || t.kind === "xfer") return;
+      if (!validR(t) || t.kind === "xfer") return;
       var o = m[t.date.slice(0, 7)]; if (!o) return;
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date); if (t.kind === "in") o.inc += a; else o.exp += a;
     });
@@ -2972,7 +3022,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var host = $("#dCash"); if (!host) return;
     var R = fRange(), inc = 0, exp = 0;
     state.tx.forEach(function (t) {
-      if (!validT(t) || t.kind === "xfer" || !inRange(t.date, R)) return;
+      if (!validR(t) || t.kind === "xfer" || !inRange(t.date, R)) return;
       var a = conv(t.amount, wmap[t.wallet].cur, null, t.date); if (t.kind === "in") inc += a; else exp += a;
     });
     var net = inc - exp;
@@ -3037,7 +3087,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (actWal && !wmap[actWal]) actWal = "";
     wsel.value = actWal;
     document.querySelectorAll("[data-ak]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ak") === actKind)); });
-    var rows = state.tx.filter(validT).filter(function (t) {
+    var rows = state.tx.filter(validR).filter(function (t) {
       if (!inRange(t.date, R)) return false;
       if (actKind !== "all" && t.kind !== actKind) return false;
       if (actWal && t.wallet !== actWal && t.to !== actWal) return false;
@@ -3136,7 +3186,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var b = balances(), A = dlGet().acct, rank = {};
     (A.order || []).forEach(function (id, i) { rank[id] = i; });
     var val = function (w) { return conv(b[w.id] || 0, w.cur); }, mode = A.sort || "custom";
-    var ws = state.wallets.filter(function (w) { return !isCredit(w); }).sort(function (a, c) {
+    var ws = state.wallets.filter(function (w) { return !isCredit(w) && (!w.hidden || state.showHid); }).sort(function (a, c) {
       if (mode === "name") return String(a.name).localeCompare(String(c.name), undefined, { numeric: true, sensitivity: "base" });
       if (mode === "bal-desc") return val(c) - val(a) || String(a.name).localeCompare(String(c.name));
       if (mode === "bal-asc") return val(a) - val(c) || String(a.name).localeCompare(String(c.name));
@@ -3148,12 +3198,14 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     });
     if (document.activeElement !== $("#aSort")) $("#aSort").value = ["custom", "name", "bal-desc", "bal-asc", "type"].indexOf(mode) >= 0 ? mode : "custom";
     $("#aCount").textContent = ws.length ? ws.length + (ws.length === 1 ? " account" : " accounts") : "";
+    var nh = state.wallets.filter(function (w) { return w.hidden; }).length, hb = $("#aHidTgl");
+    hb.hidden = !nh; hb.textContent = state.showHid ? "Hide hidden" : "Show hidden (" + nh + ")"; hb.setAttribute("aria-pressed", String(!!state.showHid));
     var host = $("#dAccts"), min = Math.max(120, Math.min(340, Number(A.min) || 190));
     host.style.setProperty("--amin", min + "px");
     if (document.activeElement !== $("#aSize")) $("#aSize").value = min;
     host.innerHTML = ws.length ? ws.map(function (w) {
       var v = b[w.id] || 0;
-      return '<button type="button" class="acct" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
+      return '<button type="button" class="acct' + (w.hidden ? ' ishid' : '') + (w.noRep ? ' norep' : '') + '" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
     }).join("") : '<p class="empty">No accounts yet. <button type="button" class="linkbtn" data-addacct>Add an account</button> or <button type="button" class="linkbtn" id="seedBtn">load a few examples</button>.</p>';
   }
   function nextDue(day) {
@@ -3165,7 +3217,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   }
   function renderCards() {
     var host = $("#dCards"); if (!host) return;
-    var b = balances(), cards = state.wallets.filter(isCredit), tot = 0;
+    var b = balances(), cards = state.wallets.filter(function (w) { return isCredit(w) && (!w.hidden || state.showHid); }), tot = 0;
     var html = cards.map(function (w) {
       var owed = -(b[w.id] || 0), od = conv(owed, w.cur); if (owed > 0) tot += od;
       var main = owed > 0 ? '<span class="co loss">' + D(od) + "</span>" : owed < 0 ? '<span class="co win">' + D(-od) + "</span>" : '<span class="co">' + D(0) + "</span>";
@@ -3178,7 +3230,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       var due = "", nd = owed > 0 ? nextDue(w.due) : null;
       if (nd) due = '<span class="duebadge ' + (nd.days === 0 ? "now" : nd.days <= 3 ? "soon" : "") + '">Due ' + esc(fmtShort(nd.date)) + " · " + (nd.days === 0 ? "today" : nd.days === 1 ? "tomorrow" : "in " + nd.days + " days") + "</span>";
       var meta = [w.last4 ? "••" + esc(w.last4) : "", w.stmt ? "Statement day " + w.stmt : "", w.cur !== state.disp ? w.cur : ""].filter(Boolean).join(" · ");
-      return '<div class="ctile"><button type="button" class="ctmain" data-sc="wallets" data-wid="' + esc(w.id) + '" aria-label="' + esc(w.name) + ', open actions"><span class="an">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="cm">' + lab + "</span>" + main + bar + av + due + (meta ? '<span class="cm">' + meta + "</span>" : "") + "</button>" +
+      return '<div class="ctile' + (w.hidden ? ' ishid' : '') + '"><button type="button" class="ctmain" data-sc="wallets" data-wid="' + esc(w.id) + '" aria-label="' + esc(w.name) + ', open actions"><span class="an">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="cm">' + lab + "</span>" + main + bar + av + due + (meta ? '<span class="cm">' + meta + "</span>" : "") + "</button>" +
         (owed > 0 ? '<button type="button" class="btn sm ctpay" data-pay="' + esc(w.id) + '">Pay card</button>' : "") + "</div>";
     }).join("");
     host.innerHTML = html || '<p class="empty">No credit cards yet. Add one with + Wallet at the top and choose Credit card as the type.</p>';
@@ -3343,10 +3395,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   var uOpen = false, uEditId = null, uArm = null;
   function budgetSpent(u) {
     var R = fRange(), cats = String(u.cats || u.name).split(",").map(function (c) { return c.trim().toLowerCase(); }).filter(Boolean), tot = 0;
-    state.tx.forEach(function (t) { if (validT(t) && t.kind === "out" && inRange(t.date, R) && cats.indexOf(String(t.cat || "").toLowerCase()) >= 0) tot += conv(t.amount, wmap[t.wallet].cur, null, t.date); });
+    state.tx.forEach(function (t) { if (validR(t) && t.kind === "out" && inRange(t.date, R) && cats.indexOf(String(t.cat || "").toLowerCase()) >= 0) tot += conv(t.amount, wmap[t.wallet].cur, null, t.date); });
     return tot;
   }
-  function saveBudgets() { try { localStorage.setItem("wl-budgets", JSON.stringify(state.budgets)); } catch (e) {} syncPrefs(); }
+  function saveBudgets() { try { localStorage.setItem("wl-budgets", JSON.stringify(RAW.budgets)); } catch (e) {} syncPrefs(); }
   function renderBudgets() {
     var list = state.budgets.filter(function (u) { return u && u.amount > 0 && CUR[u.cur]; }), tb = 0, ts = 0;
     var html = list.map(function (u) {
@@ -3383,6 +3435,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (!name) { err.textContent = "Give the budget a name."; $("#uName").focus(); return; }
     if (!isFinite(v) || v <= 0) { err.textContent = "The amount must be a number above 0."; $("#uAmt").focus(); return; }
     var o = { name: name, amount: rnd(v, state.disp), cur: state.disp, cats: $("#uCats").value.trim() };
+    if (!uEditId) o.ledger = ledgerId;
     if (uEditId) state.budgets = state.budgets.map(function (x) { return x.id === uEditId ? Object.assign({}, x, o) : x; });
     else { o.id = gid("u"); o.createdAt = Date.now(); state.budgets = state.budgets.concat([o]); }
     saveBudgets(); closeBudgetForm();
@@ -3595,10 +3648,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   })());
 
   function useLocal() {
-    try { var a = JSON.parse(localStorage.getItem("wl-wallets")); if (Array.isArray(a)) state.wallets = a; } catch (e) {}
-    try { var b = JSON.parse(localStorage.getItem("wl-tx")); if (Array.isArray(b)) state.tx = b; } catch (e) {}
-    try { var g = JSON.parse(localStorage.getItem("wl-goals")); if (Array.isArray(g)) state.goals = g; } catch (e) {}
-    try { var rc = JSON.parse(localStorage.getItem("wl-recs")); if (Array.isArray(rc)) state.recs = rc; } catch (e) {}
+    try { var a = JSON.parse(localStorage.getItem("wl-wallets")); if (Array.isArray(a)) setRaw("wallets", a); } catch (e) {}
+    try { var b = JSON.parse(localStorage.getItem("wl-tx")); if (Array.isArray(b)) setRaw("tx", b); } catch (e) {}
+    try { var g = JSON.parse(localStorage.getItem("wl-goals")); if (Array.isArray(g)) setRaw("goals", g); } catch (e) {}
+    try { var rc = JSON.parse(localStorage.getItem("wl-recs")); if (Array.isArray(rc)) setRaw("recs", rc); } catch (e) {}
     state.loaded = true; prefsReady = true; setStatus(""); render();
   }
   setInterval(function () { var d = new Date(), q = ds(d.getFullYear(), d.getMonth(), d.getDate()); if (q !== todayStr) { var was = state.sel === todayStr; now = d; todayStr = q; if (was) state.sel = q; state.y = d.getFullYear(); state.m = d.getMonth(); render(); } }, 60000);
@@ -3610,24 +3663,54 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       if (!uid) { useLocal(); return; }
       var base = db.doc("data/users/" + uid + "/wallet");
       state.wcol = base.collection("wallets"); state.col = base.collection("tx"); state.gcol = base.collection("goals"); state.rcol = base.collection("recurring"); pcol = base.collection("prefs");
-      pcol.onSnapshot(function (snap) { snap.docs.forEach(function (d) { if (d.id !== "main") return; var o = d.data() || {}; if (o.budget && CODES.indexOf(o.budget.cur) >= 0) state.budget = { amount: Number(o.budget.amount) || 0, cur: o.budget.cur, goal: Number(o.budget.goal) || 0 }; if (o.rates) CODES.forEach(function (k) { var v = Number(o.rates[k]); if (isFinite(v) && v > 0) state.rates[k] = v; }); if (o.rsrc && o.rsrc.s) state.rsrc = o.rsrc; if (o.eom) state.eom = Object.assign({}, o.eom, state.eom); if (Array.isArray(o.budgets)) state.budgets = o.budgets; if (o.dlayout && Array.isArray(o.dlayout.order) && !dlBusy) state.dl = o.dlayout; if (o.rlayout && Array.isArray(o.rlayout.order)) state.rl = o.rlayout; if (o.clayout && Array.isArray(o.clayout.order)) state.cl = o.clayout; if (o.locks) state.locks = Object.assign({}, state.locks, o.locks); if (o.cats && typeof o.cats === "object") { state.cats = normCats(o.cats); applyCats(); subChipsAll(); } }); prefsReady = true; render(); }, function () {});
+      pcol.onSnapshot(function (snap) { snap.docs.forEach(function (d) { if (d.id !== "main") return; var o = d.data() || {}; if (o.budget && CODES.indexOf(o.budget.cur) >= 0) state.budget = { amount: Number(o.budget.amount) || 0, cur: o.budget.cur, goal: Number(o.budget.goal) || 0 }; if (o.rates) CODES.forEach(function (k) { var v = Number(o.rates[k]); if (isFinite(v) && v > 0) state.rates[k] = v; }); if (o.rsrc && o.rsrc.s) state.rsrc = o.rsrc; if (o.eom) state.eom = Object.assign({}, o.eom, state.eom); if (Array.isArray(o.budgets)) setRaw("budgets", o.budgets); if (o.dlayout && Array.isArray(o.dlayout.order) && !dlBusy) state.dl = o.dlayout; if (o.rlayout && Array.isArray(o.rlayout.order)) state.rl = o.rlayout; if (o.clayout && Array.isArray(o.clayout.order)) state.cl = o.clayout; if (o.locks) state.locks = Object.assign({}, state.locks, o.locks); if (o.cats && typeof o.cats === "object") { state.cats = normCats(o.cats); applyCats(); subChipsAll(); } }); prefsReady = true; render(); }, function () {});
       state.rcol.onSnapshot(function (snap) {
-        state.recs = snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; }); render();
+        setRaw("recs", snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; })); render();
       }, function () {});
       state.gcol.onSnapshot(function (snap) {
-        state.goals = snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; }); render();
+        setRaw("goals", snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; })); render();
       }, function () {});
       state.wcol.onSnapshot(function (snap) {
-        state.wallets = snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; }); render();
+        setRaw("wallets", snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; })); render();
       }, function () {});
       var timer = setTimeout(function () { if (!state.loaded) setStatus("Still connecting to your saved wallets…", true); }, 10000);
       state.col.onSnapshot(function (snap) {
-        state.tx = snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; });
+        setRaw("tx", snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; }));
         if (!snap.metadata.fromCache || state.tx.length) { state.loaded = true; clearTimeout(timer); setStatus("Private to you and saved to your account."); }
         render();
       }, function (e) { clearTimeout(timer); setStatus("Live sync stopped (" + ((e && e.code) || "error") + "). Reload the page to reconnect.", true); });
     });
   }).catch(function () { useLocal(); });
+  /* ===== Ledger switcher ===== */
+  (function () {
+    var sel = $("#ledgerSel");
+    function fill() { sel.innerHTML = ledgerOptions(ledgerId); }
+    function name(id) { var n = ""; LEDGERS.forEach(function (l) { if (l.id === id) n = l.name; }); return n; }
+    function taken(n, except) { return LEDGERS.some(function (l) { return l.id !== except && l.name.toLowerCase() === n.toLowerCase(); }); }
+    function switchTo(id) {
+      ledgerId = id; saveLedgers(); bumpView(); state.wSel = null; state.lastWallet = null; state.showHid = false;
+      fill(); render();
+    }
+    sel.addEventListener("change", function () { switchTo(sel.value); });
+    $("#ledgerNew").addEventListener("click", function () {
+      var n = window.prompt("Name the new ledger (for example, a person's name):", ""); if (n == null) return; n = n.trim().slice(0, 30); if (!n) return;
+      if (taken(n, null)) { window.alert("There is already a ledger with that name."); return; }
+      var id = gid("L"); LEDGERS.push({ id: id, name: n }); switchTo(id);
+    });
+    $("#ledgerRen").addEventListener("click", function () {
+      var n = window.prompt("Rename this ledger:", name(ledgerId)); if (n == null) return; n = n.trim().slice(0, 30); if (!n) return;
+      if (taken(n, ledgerId)) { window.alert("There is already a ledger with that name."); return; }
+      LEDGERS.forEach(function (l) { if (l.id === ledgerId) l.name = n; }); saveLedgers(); fill(); renderAccounts();
+    });
+    $("#ledgerDel").addEventListener("click", function () {
+      if (ledgerId === "main") { window.alert("The first ledger can't be deleted, but you can rename it."); return; }
+      var used = RAW.wallets.some(function (w) { return (w.ledger || "main") === ledgerId; });
+      if (used) { window.alert("This ledger still has accounts. Move them to another ledger (Account maintenance, Ledger) or delete them first."); return; }
+      if (!window.confirm("Delete the ledger \u201c" + name(ledgerId) + "\u201d?")) return;
+      var gone = ledgerId; LEDGERS = LEDGERS.filter(function (l) { return l.id !== gone; }); switchTo("main");
+    });
+    fill();
+  })();
   /* on phones the currency picker sits next to the date range chip; on wider screens it goes back to the top bar */
   (function () {
     var disp = $("#disp"), row = $("#chipRow"), chip = $("#rangeChip"), cur = disp.parentNode, mq = window.matchMedia("(max-width: 699px)");
