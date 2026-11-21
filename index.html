@@ -670,6 +670,11 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 .catlist .acts { display: flex; gap: 6px; flex: none; }
 .catlist li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .catlist { max-height: 240px; }
+.subline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chips.hscroll { flex: 1 1 auto; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 0; }
+.chips.hscroll::-webkit-scrollbar { display: none; }
+.chips.hscroll .chp { flex: none; white-space: nowrap; }
+.subline .chp.gear { flex: none; }
 </style>
 <script>
 (function () {
@@ -1616,9 +1621,9 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     var kk = k === "in" ? "in" : "out", cur = $(p.sub).value.trim(), list = subsOf(kk, cat).slice();
     if (cur && !ciFind(list, cur)) list.unshift(cur);
     row.hidden = false;
-    row.innerHTML = '<span class="sublbl">Subcategory (optional)</span><div class="chips">' + list.map(function (x) {
+    row.innerHTML = '<span class="sublbl">Subcategory (optional)</span><div class="subline"><div class="chips hscroll">' + list.map(function (x) {
       return '<button type="button" class="chp" data-s="' + esc(encodeURIComponent(x)) + '" aria-pressed="' + (cur.toLowerCase() === x.toLowerCase()) + '">' + esc(x) + "</button>";
-    }).join("") + '<button type="button" class="chp gear" data-gear aria-label="Add or edit subcategories" title="Add or edit subcategories">' + GEAR + "</button></div>";
+    }).join("") + '</div><button type="button" class="chp gear" data-gear aria-label="Add or edit subcategories" title="Add or edit subcategories">' + GEAR + "</button></div>";
   }
   function subChipsAll() { PICK.forEach(function (p) { subChips(p.cat); }); }
   var pickDlg = $("#pickDlg"), pickCur = null;
