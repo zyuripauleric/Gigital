@@ -771,11 +771,14 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
 /* Swipe left on a transaction to delete (touch) */
 .act[data-id], .act[data-hid] { position: relative; touch-action: pan-y; }
-.act .swdel { display: none; position: absolute; top: 2px; bottom: 2px; right: 0; width: 84px; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: var(--loss); color: #fff; font-weight: 600; font-size: 13.5px; }
+.act .swacts { display: none; position: absolute; top: 2px; bottom: 2px; right: 0; width: 152px; overflow: hidden; border-radius: 12px; }
+.act .swacts button { flex: 1 1 0; min-width: 0; border: 0; padding: 0; font-weight: 600; font-size: 13.5px; color: #fff; }
+.act .swacts .swedit { background: var(--accent); color: var(--accent-ink, #fff); }
+.act .swacts .swdel { background: var(--loss); }
 .act.swp { overflow: hidden; border-radius: 12px; }
-.act.swp .swdel { display: flex; }
-.act.swp > *:not(.swdel) { transform: translateX(var(--sx, 0px)); transition: transform 0.26s cubic-bezier(0.2, 0.85, 0.25, 1); }
-.act.swp.swdrag > *:not(.swdel) { transition: none; }
+.act.swp .swacts { display: flex; }
+.act.swp > *:not(.swacts) { transform: translateX(var(--sx, 0px)); transition: transform 0.26s cubic-bezier(0.2, 0.85, 0.25, 1); }
+.act.swp.swdrag > *:not(.swacts) { transition: none; }
 
 /* One icon style everywhere: same line weight at every size */
 .tabs button svg, .tile .ic svg, .act .aic svg, .sc .sic svg, .chp svg, .wi svg, .themesw svg, .searchbar svg, #ledgerInAll svg { stroke-linecap: round; stroke-linejoin: round; }
@@ -950,6 +953,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
                 <button type="button" class="btn" data-ak="in" aria-pressed="false">Income</button>
                 <button type="button" class="btn" data-ak="xfer" aria-pressed="false">Transfers</button>
               </div>
+            </div>
+            <div class="achips" id="aRange" role="group" aria-label="Date range" style="margin:0 0 10px">
+              <button type="button" class="btn" data-ar="this" aria-pressed="true">This month</button>
+              <button type="button" class="btn" data-ar="last" aria-pressed="false">Last month</button>
+              <button type="button" class="btn" data-ar="all" aria-pressed="false">All time</button>
             </div>
             <div class="bulkbar" id="aBulk" role="group" aria-label="Bulk actions" hidden></div>
             <div id="dAct"></div>
@@ -1618,7 +1626,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     bar.hidden = !B.mode; if (!B.mode) return;
     var n = bulkN(B), all = B.ids.length > 0 && n === B.ids.length;
     bar.innerHTML = '<span class="bcount" aria-live="polite">' + n + " selected</span>" +
-      '<button type="button" class="btn sm" data-ball' + (B.ids.length ? "" : " disabled") + ">" + (all ? "Clear" : "Select all " + B.ids.length) + "</button>" +
+      (B.noAll ? "" : '<button type="button" class="btn sm" data-ball' + (B.ids.length ? "" : " disabled") + ">" + (all ? "Clear" : "Select all " + B.ids.length) + "</button>") +
       '<button type="button" class="btn sm bdel' + (B.arm ? " arm" : "") + '" data-bdel' + (n ? "" : " disabled") + ">" + (B.arm ? "Sure? Delete " + n : "Delete" + (n ? " " + n : "")) + "</button>";
   }
   function bulkRowToggle(B, e, rowSel, attr, bar, btn) {
@@ -1643,7 +1651,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       }
     });
   }
-  var actBulk = bulkNew(), histBulk = bulkNew();
+  var actBulk = bulkNew(), histBulk = bulkNew(); actBulk.noAll = true; /* Recent activity has no "Select all" */
 
   /* ===== Confetti when a savings goal is reached ===== */
   function confetti() {
@@ -1667,13 +1675,13 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function celebrate(name) { confetti(); setStatus("Goal reached: " + name + ". Well done!"); }
 
   /* ===== Swipe left on a transaction (touch) to reveal Delete ===== */
-  var SWBTN = '<button type="button" class="swdel" data-swdel tabindex="-1" aria-label="Delete transaction">Delete</button>';
+  var SWBTN = '<div class="swacts" data-swacts><button type="button" class="swedit" data-swedit tabindex="-1" aria-label="Edit transaction">Edit</button><button type="button" class="swdel" data-swdel tabindex="-1" aria-label="Delete transaction">Delete</button></div>';
   function wireSwipe(host, sel, idAttr, isBulk) {
-    var OPEN = 88, st = null, open = null, swallow = false;
+    var OPEN = 156, st = null, open = null, swallow = false;
     function setX(row, x, anim) { row.classList.toggle("swdrag", !anim); row.style.setProperty("--sx", x + "px"); }
     function closeRow(row) { if (!row) return; setX(row, 0, true); row.classList.remove("swopen"); setTimeout(function () { if (!row.classList.contains("swopen")) row.classList.remove("swp"); }, 260); if (open === row) open = null; }
     host.addEventListener("pointerdown", function (e) {
-      if (e.pointerType !== "touch" || isBulk() || e.target.closest("[data-swdel]")) return;
+      if (e.pointerType !== "touch" || isBulk() || e.target.closest("[data-swacts]")) return;
       var row = e.target.closest(sel); if (!row) return;
       st = { row: row, x0: e.clientX, y0: e.clientY, base: row.classList.contains("swopen") ? -OPEN : 0, on: false, dead: false, x: 0 };
     });
@@ -1697,10 +1705,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     /* a tap anywhere else closes an open row */
     document.addEventListener("pointerdown", function (e) {
       if (!open || !open.isConnected) { open = null; return; }
-      if (e.target.closest("[data-swdel]") && open.contains(e.target)) return;
+      if (e.target.closest("[data-swacts]") && open.contains(e.target)) return;
       var r = open; closeRow(r); if (host.contains(e.target)) { swallow = true; setTimeout(function () { swallow = false; }, 350); }
     }, true);
     host.addEventListener("click", function (e) {
+      var eb = e.target.closest("[data-swedit]");
+      if (eb) { e.stopPropagation(); e.preventDefault(); var er = eb.closest(sel); if (er) { closeRow(er); openTxDlg(er.getAttribute(idAttr)); } return; }
       var b = e.target.closest("[data-swdel]");
       if (b) { e.stopPropagation(); e.preventDefault(); var row = b.closest(sel); open = null; if (row) drop("t", row.getAttribute(idAttr)); return; }
       if (swallow) { e.stopPropagation(); e.preventDefault(); }
@@ -3338,7 +3348,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       '<circle cx="' + xs(sel).toFixed(1) + '" cy="' + ys(last.v).toFixed(1) + '" r="5" style="fill:var(--surface);stroke:var(--accent);stroke-width:2"/><text class="big" x="' + Math.min(W - R2 - 30, Math.max(L + 30, xs(sel))).toFixed(1) + '" y="' + Math.max(T + 10, ys(last.v) - 12).toFixed(1) + '" text-anchor="middle">' + esc(compact(last.v).replace(/^\+/, "")) + "</text>" +
       pts.map(function (p, k) { return '<rect data-k="' + k + '" x="' + (xs(k) - hw / 2).toFixed(1) + '" y="0" width="' + hw.toFixed(1) + '" height="' + H + '" fill="transparent" style="cursor:pointer"/>'; }).join("") + "</svg>";
   }
-  var actSel = null, actArm = null, actKind = "all", actWal = "", actLimit = 10, ACT_STEP = 10;
+  var actSel = null, actArm = null, actKind = "all", actWal = "", actLimit = 10, ACT_STEP = 10, actRange = "this";
+  function actPeriod(k) {
+    var y = +todayStr.slice(0, 4), m = +todayStr.slice(5, 7) - 1;
+    if (k === "last") return { from: dstr(new Date(y, m - 1, 1)), to: dstr(new Date(y, m, 0)) };
+    return { from: dstr(new Date(y, m, 1)), to: dstr(new Date(y, m + 1, 0)) };
+  }
   var AIC = { out: '<path d="M7 17 17 7M9 7h8v8"/>', "in": '<path d="M17 7 7 17M15 17H7V9"/>', xfer: '<path d="M7 7h12l-3-3M17 17H5l3 3"/>' };
   function dayLabel(d) {
     if (d === todayStr) return "Today";
@@ -3359,8 +3374,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (actWal && !wmap[actWal]) actWal = "";
     wsel.value = actWal;
     document.querySelectorAll("[data-ak]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ak") === actKind)); });
+    /* a category picked in the donut follows the report dates; otherwise the list follows its own This month / Last month / All time chips */
+    var AR = sel ? R : actRange === "all" ? null : actPeriod(actRange);
+    document.querySelectorAll("[data-ar]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ar") === actRange)); });
+    $("#aRange").hidden = !!sel;
     var rows = state.tx.filter(validR).filter(function (t) {
-      if (!inRange(t.date, R)) return false;
+      if (AR && !inRange(t.date, AR)) return false;
       if (actKind !== "all" && t.kind !== actKind) return false;
       if (actWal && t.wallet !== actWal && t.to !== actWal) return false;
       if (sel && !(t.kind === "out" && sel.cats.indexOf(t.cat || "Other") >= 0)) return false;
@@ -3377,7 +3396,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (sel) $("#dActHint").innerHTML = esc(total + (total === 1 ? " transaction" : " transactions") + " · " + sel.name + " · " + fLabel(R)) + ' <button type="button" class="linkbtn plain" data-clearcat>Clear</button>';
     else $("#dActHint").textContent = !total ? "" : filtered ? total + (total === 1 ? " match" : " matches") : more > 0 ? "Showing " + shown.length + " of " + total : total + (total === 1 ? " transaction" : " transactions");
     var html = "", cur = "";
-    if (!filtered && !sel && !tdy.length && inRange(todayStr, R)) html += '<div class="act-date"><span>Today</span></div><p class="empty">Nothing logged today yet.</p>';
+    if (!filtered && !sel && !tdy.length && (!AR || inRange(todayStr, AR))) html += '<div class="act-date"><span>Today</span></div><p class="empty">Nothing logged today yet.</p>';
     shown.forEach(function (t) {
       var w = wmap[t.wallet], amt, ac = "";
       if (t.kind === "xfer") amt = X(t.amount, w.cur, t.date);
@@ -3394,9 +3413,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         '<span class="amt ' + ac + '">' + amt + "</span>" + SWBTN + "</div>";
       if (on) html += '<div class="actrow"><button type="button" class="btn sm" data-aedit="' + esc(t.id) + '">Edit</button><button type="button" class="btn sm" data-adel="' + esc(t.id) + '">Delete</button></div>';
     });
-    if (more > 0) html += '<div class="actmore"><button type="button" class="btn sm" data-amore="' + ACT_STEP + '">Show ' + Math.min(ACT_STEP, more) + ' more</button><button type="button" class="btn sm" data-aall>Show all time</button></div>';
+    if (more > 0) html += '<div class="actmore"><button type="button" class="btn sm" data-amore="' + ACT_STEP + '">Show ' + Math.min(ACT_STEP, more) + ' more</button></div>';
     renderBulk(actBulk, $("#aBulk"), $("#aSelBtn"));
-    $("#dAct").innerHTML = html || '<p class="empty">' + (filtered ? "Nothing matches those filters." : "No transactions yet. Use the shortcut to add your first one.") + "</p>";
+    $("#dAct").innerHTML = html || '<p class="empty">' + (filtered ? "Nothing matches those filters." : AR ? "No transactions in this period." : "No transactions yet. Use the shortcut to add your first one.") + "</p>";
   }
   function renderDaily() {
     var host = $("#dDaily"), budget = budgetNow(), mp = todayStr.slice(0, 8), todaySp = spend(todayStr, todayStr).total, monthSp = spend(mp + "01", todayStr).total;
@@ -3620,6 +3639,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (row) { var rid = row.getAttribute("data-id"); actSel = actSel === rid ? null : rid; renderActivity(); }
   });
   $("#aWal").addEventListener("change", function () { actWal = this.value; actReset(); renderActivity(); });
+  $("#aRange").addEventListener("click", function (e) { var b = e.target.closest("[data-ar]"); if (!b) return; actRange = b.getAttribute("data-ar"); actReset(); renderActivity(); });
   $("#aKinds").addEventListener("click", function (e) { var b = e.target.closest("[data-ak]"); if (!b) return; actKind = b.getAttribute("data-ak"); actReset(); renderActivity(); });
   $("#dAct").addEventListener("click", function (e) {
     if (e.target.closest("[data-amore]")) { actLimit += ACT_STEP; renderActivity(); return; }
