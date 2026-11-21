@@ -593,6 +593,13 @@ body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidde
 @media (hover: none) and (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
 }
+/* Popup header (with the close button) stays pinned while the popup scrolls, and the popup respects the iPhone notch / home bar and keyboard */
+#acctDlg, #txDlg, #recDlg, #catDlg {
+  inset: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0;
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(var(--vvh, 100dvh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 12px; padding: 14px 20px 10px; background: var(--surface); border-radius: 22px 22px 0 0; }
 </style>
 <script>
 (function () {
@@ -3432,6 +3439,13 @@ body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidde
     }
     var mo = new MutationObserver(sync);
     dlgs.forEach(function (d) { mo.observe(d, { attributes: true, attributeFilter: ["open"] }); d.addEventListener("close", sync); });
+  })();
+
+  /* track the real visible height (iOS toolbars / keyboard) so popups never exceed the screen */
+  (function () {
+    var vv = window.visualViewport;
+    function set() { document.documentElement.style.setProperty("--vvh", (vv ? vv.height : window.innerHeight) + "px"); }
+    set(); if (vv) { vv.addEventListener("resize", set); vv.addEventListener("scroll", set); } window.addEventListener("resize", set);
   })();
 </script>
 </body></html>

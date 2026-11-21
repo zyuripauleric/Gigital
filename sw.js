@@ -1,6 +1,6 @@
 /* Wallet service worker: keeps a copy of the app so it opens offline.
    Bump VERSION whenever index.html changes so phones pick up the new copy. */
-var VERSION = "wallet-v5";
+var VERSION = "wallet-v6";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", function (e) {
