@@ -1367,18 +1367,10 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   /* ===== Header, stats, budget ===== */
   function monthPrefix() { return state.y + "-" + pad(state.m + 1) + "-"; }
   function renderHeader(days) {
-    var nw = netWorth(balances()), mp = monthPrefix(), net = 0;
-    var R = fRange(); Object.keys(days).forEach(function (k) { if (k >= R.from && k <= R.to) net += days[k].net; });
-    var td = days[todayStr];
+    var nw = netWorth(balances()), td = days[todayStr], ex = td ? td.exp : 0;
     $("#pills").innerHTML =
-      '<span class="pill">Net worth <b>' + D(nw) + '</b></span>' + owedPill() +
-      '<span class="pill">' + esc(fShort(R)) + ' <b class="' + cls(net) + '">' + D(net, true) + '</b></span>' +
-      '<span class="pill">Today <b class="' + (td ? cls(td.net) : "") + '">' + (td ? D(td.net, true) : "–") + '</b></span>' + (state.locks[mp.slice(0, 7)] && !state.locks[mp.slice(0, 7)]._u ? '<span class="pill">Rates <b>locked</b></span>' : "");
-  }
-  function owedPill() {
-    var b = balances(), t = 0, n = 0;
-    state.wallets.forEach(function (w) { if (isCredit(w)) { n++; t += conv(Math.max(0, -(b[w.id] || 0)), w.cur); } });
-    return n ? '<span class="pill">Owed <b class="' + (t > 0 ? "loss" : "") + '">' + D(t) + "</b></span>" : "";
+      '<span class="pill">Net worth <b>' + D(nw) + '</b></span>' +
+      '<span class="pill">Today\'s expense <b class="' + (ex > 0 ? "loss" : "") + '">' + D(ex) + '</b></span>';
   }
   function monthTotals(days) {
     var mp = monthPrefix(), r = { inc: 0, exp: 0, cats: {}, n: 0, big: null, spendDays: 0 };
