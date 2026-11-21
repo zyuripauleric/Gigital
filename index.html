@@ -986,9 +986,10 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
         <div class="field" id="rChargeNameBox" hidden><label for="rChargeName">Charge name</label><input type="text" id="rChargeName" maxlength="30" placeholder="Processing fee" autocomplete="off"></div>
         <div class="calc" id="rCalc" hidden></div>
         <div class="row2">
-          <div class="field"><label for="rCat">Category</label><input type="text" id="rCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="rCatList"></datalist><input type="hidden" id="rSub"><datalist id="rSubList"></datalist><div class="subrow" id="rSubRow" hidden></div></div>
+          <div class="field"><label for="rCat">Category</label><input type="text" id="rCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="rCatList"></datalist><input type="hidden" id="rSub"><datalist id="rSubList"></datalist></div>
           <div class="field" id="rPayeeBox"><label for="rPayee">Payee (optional)</label><input type="text" id="rPayee" maxlength="40" autocomplete="off"></div>
         </div>
+        <div class="subrow" id="rSubRow" hidden></div>
         <small class="hint" id="rHint"></small>
         <p class="err" id="rErr" role="alert"></p>
         <div class="formbtns"><button class="btn primary" type="submit" id="rSave">Add repeat</button><button class="btn" type="button" id="rCancel">Cancel</button></div>
@@ -1050,10 +1051,11 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       </div>
       <small class="hint" id="aXferHint"></small>
       <div class="row2">
-        <div class="field" id="aCatBox"><label for="aCat">Category</label><input type="text" id="aCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="aCatList"></datalist><input type="hidden" id="aSub"><datalist id="aSubList"></datalist><div class="subrow" id="aSubRow" hidden></div></div>
+        <div class="field" id="aCatBox"><label for="aCat">Category</label><input type="text" id="aCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="aCatList"></datalist><input type="hidden" id="aSub"><datalist id="aSubList"></datalist></div>
         <div class="field"><label for="aPay">Payment type</label>
           <select id="aPay"><option>Cash</option><option>Debit card</option><option>Credit card</option><option>Bank transfer</option><option>E-wallet</option><option>Check</option><option>Other</option></select></div>
       </div>
+      <div class="subrow" id="aSubRow" hidden></div>
       <div class="row2">
         <div class="field" id="aPayeeBox"><label for="aPayee" id="aPayeeL">Payee</label><input type="text" id="aPayee" maxlength="40" placeholder="Who you paid" autocomplete="off"></div>
         <div class="field"><label for="aLabels">Labels</label><input type="text" id="aLabels" maxlength="60" placeholder="trip, work" autocomplete="off"><small class="hint">Separate labels with commas.</small></div>
