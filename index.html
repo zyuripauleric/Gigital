@@ -842,6 +842,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   #rTable .t td:last-child { grid-column: 1 / -1; }
   #rTable .t td[data-l]:not(:first-child):not(:last-child)::before { content: attr(data-l); display: block; margin-bottom: 4px; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 }
+
+/* warning shown when editing a recurring item that already has posted charges */
+.warnbox { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(217, 154, 30, 0.6); background: rgba(217, 154, 30, 0.13); font-size: 12.5px; line-height: 1.45; }
 </style>
 <script>
 (function () {
@@ -1136,6 +1139,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         <button type="button" data-rt="installment" aria-pressed="false">Installment</button>
         <button type="button" data-rt="subscription" aria-pressed="false">Subscription</button>
       </div>
+      <p class="warnbox" id="rWarn" role="note" hidden></p>
       <div class="field" style="margin-top:12px"><label for="rAcct">Account</label><select id="rAcct"></select></div>
       <form id="rForm" novalidate>
         <div class="row2">
@@ -2299,7 +2303,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Recurring: repeats, installments, subscriptions ===== */
   var rType = "installment", recBusy = false, rArm = null;
   var recDlg = $("#recDlg");
-  var recEditId = null;
+  var recEditId = null, recWarnSig = "";
   function openRecDlg(editId) {
     if (!state.wallets.length) { openAcctDlg(null); return; }
     var er = null; if (typeof editId === "string") state.recs.forEach(function (x) { if (x.id === editId) er = x; });
@@ -2311,6 +2315,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     setRType(er ? er.type : rType);
     $("#recDlgT").textContent = er ? "Edit " + RT_LABEL[er.type].toLowerCase() : "New recurring";
     $("#rTabs").hidden = !!er;
+    recWarnSig = "";
+    var npost = er ? state.tx.filter(function (t) { return t.rid === er.id; }).length : 0;
+    $("#rWarn").hidden = !npost;
+    if (npost) $("#rWarn").textContent = "Careful: " + npost + " charge" + (npost === 1 ? " is" : "s are") + " already posted for this item. Posted charges will not change. Editing the amount, dates, frequency or installment terms only affects charges not yet posted, and can create duplicates or gaps. To fix a posted charge, edit it in the transaction list.";
     if (er) { fillRec(er); $("#rSave").textContent = "Save changes"; }
     if (!recDlg.open) recDlg.showModal();
     if (!er) $("#rName").focus();
@@ -2608,6 +2616,20 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     } else {
       o.kind = rep ? kind : "out"; o.amount = rnd(amt, w.cur); o.freq = $("#rFreq").value;
       if (rep) { if (end && end < start) { err.textContent = "The end date must be after the start date."; $("#rEnd").focus(); return; } o.end = end || ""; }
+    }
+    if (recEditId) {
+      var ex = null; state.recs.forEach(function (x) { if (x.id === recEditId) ex = x; });
+      var np = state.tx.filter(function (t) { return t.rid === recEditId; }).length;
+      if (ex && np) {
+        var RISK = ["start", "freq", "count", "total", "mode", "stmt", "rateType", "rate", "fee", "charge"];
+        var rv = function (obj, k) { if (k === "mode") return obj.mode === "amortize" ? "amortize" : "full"; var v = obj[k]; return v == null || v === 0 || v === "0" ? "" : String(v); };
+        var nowSig = RISK.map(function (k) { return rv(o, k); }).join("|"), oldSig = RISK.map(function (k) { return rv(ex, k); }).join("|");
+        if (nowSig !== oldSig && recWarnSig !== nowSig) {
+          recWarnSig = nowSig; $("#rSave").textContent = "Confirm changes";
+          err.textContent = "You changed the schedule or installment terms. " + np + " posted charge" + (np === 1 ? "" : "s") + " will stay as they are, so the new schedule can duplicate or skip charges. Tap Confirm changes to save anyway.";
+          return;
+        }
+      }
     }
     err.textContent = ""; $("#rSave").disabled = true;
     if (recEditId) {
