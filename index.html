@@ -812,15 +812,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   #dAccts .acct .as, #dAccts .acct .ao { font-size: 11px; }
 }
 
-/* Sheets ride above the iOS keyboard */
+/* Phone sheets: fixed height. Closed keyboard = sit above Safari's toolbar; open keyboard = pin to top of the visible area */
 @media (max-width: 699px) {
-  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { inset: auto 0 var(--kb, 0px) 0; transition: bottom 0.2s ease-out; }
-  .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg, .kbd #catDlg, .kbd #pickDlg { padding-bottom: 14px; border-radius: 24px; max-height: calc(var(--vvh, 100dvh) - 8px); }
-}
-
-/* Fixed-height sheets for forms that open the keyboard: the height never changes, the sheet just rides above the keyboard */
-@media (max-width: 699px) {
-  #acctDlg, #txDlg, #recDlg, .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg { height: var(--sheet-h, 62dvh); max-height: var(--sheet-h, 62dvh); padding-top: 0; }
+  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { inset: auto 0 var(--bar, 0px) 0; }
+  #acctDlg, #txDlg, #recDlg { height: var(--sheet-h, 62dvh); max-height: var(--sheet-h, 62dvh); padding-top: 0; }
+  .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg { inset: calc(var(--vvt, 0px) + var(--gt, 10px)) 0 auto 0; border-radius: 24px; }
+  .kbd #catDlg, .kbd #pickDlg { inset: auto 0 var(--kb, 0px) 0; border-radius: 24px; max-height: calc(var(--vvh, 100dvh) - 20px); }
   dialog .dlghead { top: 0; margin-top: 0; }
 }
 </style>
@@ -1068,7 +1065,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
             </div>
           </fieldset>
           <div class="row2">
-            <div class="field"><label for="amt" id="amtLbl">Amount</label><input type="text" id="amt" inputmode="decimal" enterkeyhint="done" placeholder="0.00 or 120+45.5" autocomplete="off"></div>
+            <div class="field"><label for="amt" id="amtLbl">Amount</label><input type="text" id="amt" inputmode="decimal" enterkeyhint="done" placeholder="0.00" autocomplete="off"></div>
             <div class="field"><label for="wSel" id="wLbl">Wallet</label><select id="wSel"></select></div>
           </div>
           <div class="row2" id="xferRow" hidden>
@@ -1169,7 +1166,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         </div>
       </fieldset>
       <div class="row2">
-        <div class="field"><label for="eAmt" id="eAmtL">Amount</label><input type="text" id="eAmt" inputmode="decimal" placeholder="0.00 or 120+45.5" autocomplete="off"></div>
+        <div class="field"><label for="eAmt" id="eAmtL">Amount</label><input type="text" id="eAmt" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
         <div class="field"><label for="eDate">Date</label><input type="date" id="eDate"></div>
       </div>
       <div class="field"><label for="eW" id="eWL">Wallet</label><select id="eW"></select></div>
@@ -1203,7 +1200,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         </div>
       </fieldset>
       <div class="row2">
-        <div class="field"><label for="aAmt" id="aAmtL">Amount</label><input type="text" id="aAmt" inputmode="decimal" placeholder="0.00 or 120+45.5" autocomplete="off"></div>
+        <div class="field"><label for="aAmt" id="aAmtL">Amount</label><input type="text" id="aAmt" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
         <div class="field"><label for="aDate">Date</label><input type="date" id="aDate"></div>
       </div>
       <div class="row2" id="aXferRow" hidden>
@@ -4093,20 +4090,22 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
 
   /* track the real visible height (iOS toolbars / keyboard) so popups never exceed the screen */
   (function () {
-    var vv = window.visualViewport, kbRef = 340;
-    try { kbRef = Number(localStorage.getItem("wl-kbh")) || 340; } catch (x) {}
+    var vv = window.visualViewport, kbRef = 336;
+    try { kbRef = Number(localStorage.getItem("wl-kbh")) || 336; } catch (x) {}
+    var standalone = !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches));
     function safeTop() { var p = document.createElement("div"); p.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)"; document.body.appendChild(p); var v = p.offsetHeight; p.remove(); return v; }
     function set() {
-      var h = vv ? vv.height : window.innerHeight, root = document.documentElement;
-      /* iOS draws the keyboard over the page without resizing it: measure how much of the bottom is covered so sheets sit above it */
-      var kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+      var h = vv ? vv.height : window.innerHeight, root = document.documentElement, top = vv ? vv.offsetTop : 0;
+      var kb = vv ? Math.max(0, window.innerHeight - vv.height - top) : 0;
+      var open = kb > 60, gt = safeTop() + 10;
+      if (open) { kbRef = Math.round(kb); try { localStorage.setItem("wl-kbh", String(kbRef)); } catch (x) {} }
       root.style.setProperty("--vvh", h + "px");
-      /* fixed sheet height: the room left above the keyboard (remembered after the first time it opens), so the sheet never resizes when typing */
-      if (kb > 60) { kbRef = Math.round(kb); try { localStorage.setItem("wl-kbh", String(kbRef)); } catch (x) {} }
-      var full = Math.max(window.innerHeight, h + (kb > 60 ? kb : 0));
-      root.style.setProperty("--sheet-h", Math.max(360, Math.min(680, full - safeTop() - kbRef - 14)) + "px");
-      root.style.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
-      root.classList.toggle("kbd", kb > 60);
+      root.style.setProperty("--vvt", top + "px");
+      root.style.setProperty("--gt", gt + "px");
+      root.style.setProperty("--bar", (standalone ? 0 : 88) + "px");
+      root.style.setProperty("--kb", (open ? kb : 0) + "px");
+      root.style.setProperty("--sheet-h", Math.max(360, Math.min(680, window.innerHeight - gt - kbRef - 52)) + "px");
+      root.classList.toggle("kbd", open);
     }
     document.addEventListener("focusin", function (e) {
       var el = e.target, dlg = el.closest && el.closest("dialog");
