@@ -408,7 +408,12 @@ html, body { max-width: 100%; overflow-x: clip; }
 .cgrid.edit .dh { display: block; position: absolute; top: -14px; left: 14px; z-index: 6; padding: 2px 12px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 600; cursor: grab; touch-action: none; user-select: none; }
 .cgrid.edit .rz { display: block; position: absolute; right: -8px; bottom: -8px; z-index: 6; width: 24px; height: 24px; border-radius: 7px; background: var(--accent); cursor: nwse-resize; touch-action: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
 .dp.dragging { opacity: 0.5; pointer-events: none; }
-@media (max-width: 899px) { .dp { grid-column: 1 / -1; height: auto !important; } .cgrid.edit .rz { display: none; } }
+@media (max-width: 899px) {
+  .dp { grid-column: 1 / -1; }
+  .cgrid.edit .rz { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; right: -2px; bottom: -12px; border-radius: 12px; }
+  .cgrid.edit .rz::after { content: "\2195"; color: var(--accent-ink); font-size: 20px; font-weight: 700; line-height: 1; }
+  .cgrid.edit .dp[data-pid="accts"] .rz { display: none; }
+}
 .tw { overflow: auto; max-height: 380px; border-radius: 14px; border: 1px solid var(--glass-line); background: var(--glass); }
 table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .t th { position: sticky; top: 0; background: color-mix(in srgb, var(--surface) 70%, transparent); text-align: right; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--hair); white-space: nowrap; }
@@ -801,7 +806,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     </div>
     <div class="dashx">
         <div class="dbar" hidden><div class="dtools"><button type="button" class="btn sm" id="dCust" aria-pressed="false">Customize layout</button><button type="button" class="btn sm" id="dReset" hidden>Reset layout</button></div></div>
-        <p class="hint" id="dHint" hidden>Drag a panel's pill to move it and its corner handle to resize it. Use the red Hide pill to remove a widget, and the + buttons below to bring it back. Double-click the corner for automatic height. In My accounts, drag a cell to move it or use Cell size to make the cells smaller or larger.</p>
+        <p class="hint" id="dHint" hidden>Drag a panel's pill to move it and its corner handle to resize it (on a phone the handle changes the height). Use the red Hide pill to remove a widget, and the + buttons below to bring it back. Double-click the corner for automatic height. In My accounts, drag a cell to move it or use Cell size to make the cells smaller or larger.</p>
         <div class="addtray" id="dTray" hidden></div>
         <div id="dGrid" class="cgrid">
 <div class="dp" data-pid="accts"><div class="dh">⠿ My accounts</div><section class="panel" aria-label="My accounts">
@@ -812,15 +817,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
           <div class="phead"><h3>Credit cards</h3></div>
           <div id="dCards"></div>
         </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-<div class="dp" data-pid="tiles"><div class="dh">⠿ Summary</div><div class="tiles" id="dTiles"></div><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="cashflow"><div class="dh">⠿ Cash flow</div><section class="panel" aria-label="Cash flow">
           <div class="phead"><h3>Cash flow</h3></div>
           <div id="dCash"></div>
         </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-<div class="dp" data-pid="spark"><div class="dh">⠿ Spending over time</div><section class="panel" aria-label="Spending over time">
-              <div class="phead"><h3>Spending over time</h3><span class="num" id="dSpTot"></span></div>
-              <div id="dSpark"></div>
-            </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="daily"><div class="dh">⠿ Daily expenses</div><section class="panel" aria-label="Daily expenses">
           <h3 style="margin-bottom:10px">Daily expenses</h3>
           <div id="dDaily"></div>
@@ -874,6 +874,63 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
             <div class="formbtns"><button class="btn primary" type="submit" id="gSave">Add goal</button><button class="btn" type="button" id="gCancel">Cancel</button><button class="btn" type="button" id="gDelete" hidden>Delete goal</button></div>
           </form>
         </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
+<div class="dp" data-pid="cbudget"><div class="dh">⠿ Monthly budget</div><section class="panel" id="budgetPanel" aria-label="Monthly budget">
+      <div class="phead"><h3>Monthly spending budget</h3><button type="button" class="btn sm" id="bEdit" aria-expanded="false" aria-controls="bForm">Set budget</button></div>
+      <div id="bMeter"></div>
+      <form id="bForm" hidden novalidate>
+        <div class="field"><label for="bAmt">Budget per month</label><input type="text" id="bAmt" inputmode="decimal" placeholder="e.g. 30000 (blank = none)" autocomplete="off"></div><select id="bCur" hidden aria-hidden="true"></select>
+        <div class="field"><label for="bGoal">Monthly savings goal (optional)</label><input type="text" id="bGoal" inputmode="decimal" placeholder="e.g. 5000000 (blank = none)" autocomplete="off"></div>
+        <p class="err" id="bErr" role="alert"></p>
+        <div class="formbtns"><button class="btn primary" type="submit">Save budget</button><button class="btn" type="button" id="bCancel">Cancel</button></div>
+      </form>
+    </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
+<div class="dp" data-pid="rexp"><div class="dh">⠿ Spending by category</div><section class="panel" aria-label="Spending by category">
+        <div class="phead"><h3>Spending by category</h3></div>
+        <div id="rExp"></div>
+      </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
+<div class="dp" data-pid="rinc"><div class="dh">⠿ Income by category</div><section class="panel" aria-label="Income by category">
+        <div class="phead"><h3>Income by category</h3></div>
+        <div id="rInc"></div>
+      </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
+        </div>
+        <p class="empty" id="dEmpty" hidden>All widgets are hidden. Choose Customize layout to add them back.</p>
+      </div>
+  </div>
+
+  <div class="view" id="recView" hidden>
+    <div class="tiles" id="recTiles" style="margin-bottom:14px"></div>
+    <section class="panel" aria-label="Recurring">
+      <div class="phead"><h3>Recurring</h3><button type="button" class="btn primary sm" id="recNew">+ New</button></div>
+      <div id="recBody"></div>
+      <div id="rOrph" style="margin-top:12px" hidden></div>
+    </section>
+  </div>
+
+  <div class="view" id="ratesView" hidden>
+    <div class="convbar">
+      <div class="field"><label for="disp">Show all amounts in</label><select id="disp"></select></div>
+      <div class="field"><label for="rBase">Rates for 1 unit of</label><select id="rBase"></select></div>
+      <div class="field"><label for="rYear">Show</label><select id="rYear"></select></div>
+      <button type="button" class="btn sm" id="rFetch">Update rates</button>
+      <button type="button" class="btn sm" id="rReset">Reset latest rates</button>
+      <p class="convnote">Every month locks automatically at its closing rate as soon as it ends, even months with no transactions, and then stays put. The open month follows the live rate, refreshed every 10 minutes while the page is open. Type over a rate to override it; unlock a month to edit its rates.</p>
+    </div>
+    <section class="panel" aria-label="Monthly closing rates">
+      <h3>Monthly closing rates</h3>
+      <p class="legend" id="rSubT"></p>
+      <div id="rTable"></div>
+      <p class="legend" id="rNote"></p>
+    </section>
+  </div>
+</div>
+
+  <!-- retired widgets: removed from the layout, tray and tabs; their markup stays here, inactive, so the rest of the app keeps working -->
+  <div id="legacy" hidden aria-hidden="true">
+<div class="dp" data-pid="tiles"><div class="dh">⠿ Summary</div><div class="tiles" id="dTiles"></div><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
+<div class="dp" data-pid="spark"><div class="dh">⠿ Spending over time</div><section class="panel" aria-label="Spending over time">
+              <div class="phead"><h3>Spending over time</h3><span class="num" id="dSpTot"></span></div>
+              <div id="dSpark"></div>
+            </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="shortcuts"><div class="dh">⠿ Shortcuts</div><section class="panel" aria-label="Shortcuts">
               <h3 style="margin-bottom:10px">Super Shortcut</h3>
               <div class="sc" id="dSc">
@@ -934,29 +991,11 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
           <div class="formbtns"><button class="btn primary" type="submit" id="add">Add transaction</button><button class="btn" type="button" id="tCancel" hidden>Cancel</button></div>
         </form>
       </aside><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-<div class="dp" data-pid="cbudget"><div class="dh">⠿ Monthly budget</div><section class="panel" id="budgetPanel" aria-label="Monthly budget">
-      <div class="phead"><h3>Monthly spending budget</h3><button type="button" class="btn sm" id="bEdit" aria-expanded="false" aria-controls="bForm">Set budget</button></div>
-      <div id="bMeter"></div>
-      <form id="bForm" hidden novalidate>
-        <div class="field"><label for="bAmt">Budget per month</label><input type="text" id="bAmt" inputmode="decimal" placeholder="e.g. 30000 (blank = none)" autocomplete="off"></div><select id="bCur" hidden aria-hidden="true"></select>
-        <div class="field"><label for="bGoal">Monthly savings goal (optional)</label><input type="text" id="bGoal" inputmode="decimal" placeholder="e.g. 5000000 (blank = none)" autocomplete="off"></div>
-        <p class="err" id="bErr" role="alert"></p>
-        <div class="formbtns"><button class="btn primary" type="submit">Save budget</button><button class="btn" type="button" id="bCancel">Cancel</button></div>
-      </form>
-    </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="rstats"><div class="dh">⠿ Report summary</div><dl class="stats" id="rStats" aria-label="Report summary"></dl><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="rchart"><div class="dh">⠿ Cumulative net cash flow</div><section class="panel" aria-label="Cumulative net cash flow">
       <h3>Cumulative net cash flow</h3>
       <div id="rChart"></div>
     </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-<div class="dp" data-pid="rexp"><div class="dh">⠿ Spending by category</div><section class="panel" aria-label="Spending by category">
-        <div class="phead"><h3>Spending by category</h3></div>
-        <div id="rExp"></div>
-      </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-<div class="dp" data-pid="rinc"><div class="dh">⠿ Income by category</div><section class="panel" aria-label="Income by category">
-        <div class="phead"><h3>Income by category</h3></div>
-        <div id="rInc"></div>
-      </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
 <div class="dp" data-pid="rwal"><div class="dh">⠿ By wallet</div><section class="panel" aria-label="By wallet">
       <div class="phead"><h3>By wallet</h3></div>
       <div id="rWal"></div>
@@ -965,37 +1004,8 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       <div class="phead"><h3>Daily breakdown</h3><button type="button" class="btn sm" id="sortBtn">Newest first ↓</button></div>
       <div id="rDaily"></div>
     </section><div class="rz" title="Drag to resize · double-click for automatic height"></div></div>
-        </div>
-        <p class="empty" id="dEmpty" hidden>All widgets are hidden. Choose Customize layout to add them back.</p>
-      </div>
-  </div>
 
-  <div class="view" id="recView" hidden>
-    <div class="tiles" id="recTiles" style="margin-bottom:14px"></div>
-    <section class="panel" aria-label="Recurring">
-      <div class="phead"><h3>Recurring</h3><button type="button" class="btn primary sm" id="recNew">+ New</button></div>
-      <div id="recBody"></div>
-      <div id="rOrph" style="margin-top:12px" hidden></div>
-    </section>
   </div>
-
-  <div class="view" id="ratesView" hidden>
-    <div class="convbar">
-      <div class="field"><label for="disp">Show all amounts in</label><select id="disp"></select></div>
-      <div class="field"><label for="rBase">Rates for 1 unit of</label><select id="rBase"></select></div>
-      <div class="field"><label for="rYear">Show</label><select id="rYear"></select></div>
-      <button type="button" class="btn sm" id="rFetch">Update rates</button>
-      <button type="button" class="btn sm" id="rReset">Reset latest rates</button>
-      <p class="convnote">Every month locks automatically at its closing rate as soon as it ends, even months with no transactions, and then stays put. The open month follows the live rate, refreshed every 10 minutes while the page is open. Type over a rate to override it; unlock a month to edit its rates.</p>
-    </div>
-    <section class="panel" aria-label="Monthly closing rates">
-      <h3>Monthly closing rates</h3>
-      <p class="legend" id="rSubT"></p>
-      <div id="rTable"></div>
-      <p class="legend" id="rNote"></p>
-    </section>
-  </div>
-</div>
 
   <dialog id="recDlg" aria-labelledby="recDlgT">
     <div class="dlghead"><h3 id="recDlgT">New recurring</h3><button type="button" class="btn icon sm" id="recClose" aria-label="Close">✕</button></div>
@@ -3280,7 +3290,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     host.innerHTML = html || '<p class="empty">No credit cards yet. Add one with + Wallet at the top and choose Credit card as the type.</p>';
   }
   function renderDash() {
-    applyLayout(); renderBudgets(); renderAccounts(); renderCards(); renderTiles(); renderCashflow(); renderSpark(); renderActivity(); renderDaily(); renderDonut(); renderGoals();
+    applyLayout(); renderBudgets(); renderAccounts(); renderCards(); renderCashflow(); renderActivity(); renderDaily(); renderDonut(); renderGoals();
   }
   function closeGoalForm() {
     gFormOpen = false; gEditId = null; $("#gName").value = ""; $("#gTarget").value = ""; $("#gSaved").value = ""; $("#gErr").textContent = "";
@@ -3405,8 +3415,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   $("#dGoals").addEventListener("click", function (e) { var b = e.target.closest("[data-gid]"); if (b) openGoalForm(b.getAttribute("data-gid")); });
   $("#dashView").addEventListener("click", function (e) {
     var pc = e.target.closest("[data-pay]"); if (pc) { payCard(pc.getAttribute("data-pay")); return; }
-    var gb = e.target.closest("[data-goto]");
-    if (gb) { var d = gb.getAttribute("data-goto"), p = d.split("-").map(Number); state.y = p[0]; state.m = p[1] - 1; state.sel = d; focusWidget("ccal"); return; }
     var sc = e.target.closest("[data-sc]"); if (!sc) return; if (dEdit && sc.classList.contains("acct")) return;
     var k = sc.getAttribute("data-sc");
     if (k === "tx") addTx();
@@ -3487,9 +3495,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   });
 
   /* ===== Customizable dashboard: drag to reorder, corner to resize ===== */
-  var DL_DEF = [["accts", 12], ["cards", 12], ["tiles", 12], ["cashflow", 6], ["spark", 6], ["daily", 6], ["activity", 6], ["expenses", 6], ["budgets", 6], ["savings", 6], ["shortcuts", 6],
-    ["ccal", 8], ["cday", 4], ["cbudget", 12], ["rstats", 12], ["rchart", 12], ["rexp", 6], ["rinc", 6], ["rwal", 12], ["rdaily", 12]];
-  var REP_PIDS = ["tiles", "cashflow", "spark", "daily", "budgets", "savings", "shortcuts", "ccal", "cday", "cbudget", "rstats", "rchart", "rexp", "rinc", "rwal", "rdaily"];
+  var DL_DEF = [["accts", 12], ["cards", 12], ["activity", 6], ["expenses", 6], ["cashflow", 6], ["daily", 6], ["budgets", 6], ["savings", 6], ["cbudget", 12], ["rexp", 6], ["rinc", 6]];
+  var REP_PIDS = ["cashflow", "daily", "budgets", "savings", "cbudget", "rexp", "rinc"];
+  function narrowGrid() { return window.matchMedia("(max-width: 899px)").matches; }
   function wgrp(pid) { return REP_PIDS.indexOf(pid) >= 0 ? "rep" : "dash"; }
   function curGrp() { return state.view === "rep" ? "rep" : "dash"; }
   var dEdit = false, dlBusy = false, dGrid = $("#dGrid");
@@ -3506,10 +3514,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (ord.indexOf("cards") < 0) { var ai = Math.max(ord.indexOf("accts"), ord.indexOf("expenses")); ord.splice(ai >= 0 ? ai + 1 : ord.length, 0, "cards"); }
     if (ord.indexOf("cashflow") < 0) { var ti = ord.indexOf("tiles"); ord.splice(ti >= 0 ? ti + 1 : ord.length, 0, "cashflow"); }
     DL_DEF.forEach(function (d) { if (ord.indexOf(d[0]) < 0) ord.push(d[0]); });
-    delete size.card;
+    delete size.card; Object.keys(size).forEach(function (k) { if (!DL_DEF.some(function (d) { return d[0] === k; })) delete size[k]; });
     var hid = (dl.hidden || []).filter(function (p) { return DL_DEF.some(function (d) { return d[0] === p; }); });
     if ((dl.v || 0) < 3) hid = hid.filter(function (p) { return wgrp(p) !== "rep"; }); /* one-time: widgets that moved to Reports start visible there */
-    return { order: ord, size: size, hidden: hid, v: 3, acct: Object.assign({ order: [], min: 190, sort: "custom" }, dl.acct || {}) };
+    return { order: ord, size: size, hm: Object.assign({}, dl.hm || {}), hidden: hid, v: 3, acct: Object.assign({ order: [], min: 190, sort: "custom" }, dl.acct || {}) };
   }
   function applyLayout() {
     if (dlBusy) return;
@@ -3519,7 +3527,8 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       var el = dGrid.querySelector('[data-pid="' + d[0] + '"]'), z = L.size[d[0]] || {}; if (!el) return;
       el.hidden = L.hidden.indexOf(d[0]) >= 0 || wgrp(d[0]) !== curGrp();
       el.style.setProperty("--w", z.w || d[1]);
-      if (z.h && d[0] !== "accts") { el.style.setProperty("--h", z.h + "px"); el.setAttribute("data-h", "1"); } else { el.style.removeProperty("--h"); el.removeAttribute("data-h"); }
+      var hh = narrowGrid() ? L.hm[d[0]] : z.h;
+      if (hh && d[0] !== "accts") { el.style.setProperty("--h", hh + "px"); el.setAttribute("data-h", "1"); } else { el.style.removeProperty("--h"); el.removeAttribute("data-h"); }
     });
     dGrid.classList.toggle("edit", dEdit);
     var tray = $("#dTray");
@@ -3528,8 +3537,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     tray.innerHTML = '<span class="tl">Hidden widgets</span>' + (hidHere.length ? hidHere.map(function (pid) { return '<button type="button" class="btn sm" data-showw="' + pid + '">+ ' + esc(WNAMES[pid]) + "</button>"; }).join("") : '<span class="hint" style="display:inline">None. Use the red Hide pill on a widget to remove it.</span>');
     $("#dEmpty").hidden = dEdit || DL_DEF.some(function (d) { return wgrp(d[0]) === curGrp() && L.hidden.indexOf(d[0]) < 0; });
   }
-  var WNAMES = { accts: "My accounts", cards: "Credit cards", tiles: "Summary", cashflow: "Cash flow", spark: "Spending over time", daily: "Daily expenses", activity: "Recent activity", expenses: "All expenses", budgets: "Budgets", savings: "My savings", shortcuts: "Super Shortcut",
-    ccal: "Calendar", cday: "Day log", cbudget: "Monthly budget", rstats: "Report summary", rchart: "Cumulative net cash flow", rexp: "Spending by category", rinc: "Income by category", rwal: "By wallet", rdaily: "Daily breakdown" };
+  var WNAMES = { accts: "My accounts", cards: "Credit cards", cashflow: "Cash flow", daily: "Daily expenses", activity: "Recent activity", expenses: "All expenses", budgets: "Budgets", savings: "My savings", cbudget: "Monthly budget", rexp: "Spending by category", rinc: "Income by category" };
   [].forEach.call(dGrid.querySelectorAll(".dp"), function (el) {
     var b = document.createElement("button"); b.type = "button"; b.className = "dx"; b.textContent = "✕ Hide"; b.setAttribute("aria-label", "Hide " + (WNAMES[el.getAttribute("data-pid")] || "widget")); el.appendChild(b);
   });
@@ -3545,29 +3553,33 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   dGrid.addEventListener("pointerdown", function (e) {
     var h = e.target.closest(".dh"), z = e.target.closest(".rz"), el = e.target.closest(".dp"); if (!dEdit || !el || (!h && !z)) return;
     e.preventDefault(); dlBusy = true; try { e.target.setPointerCapture(e.pointerId); } catch (x) {}
-    var sx = e.clientX, sy = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight, col = (dGrid.clientWidth + 18) / 12, span = null, nh = null;
+    var sx = e.clientX, sy = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight, col = (dGrid.clientWidth + 18) / 12, span = null, nh = null, nr = narrowGrid();
     if (h) el.classList.add("dragging");
     function mv(ev) {
       if (h) {
         var t = document.elementFromPoint(ev.clientX, ev.clientY), o = t && t.closest ? t.closest(".dp") : null;
         if (o && o !== el && o.parentNode === dGrid) { if (el.compareDocumentPosition(o) & 4) o.after(el); else o.before(el); }
       } else {
-        span = Math.max(3, Math.min(12, Math.round((sw + ev.clientX - sx + 18) / col))); nh = Math.max(110, Math.round(sh + ev.clientY - sy));
-        el.style.setProperty("--w", span); el.style.setProperty("--h", nh + "px"); el.setAttribute("data-h", "1");
+        nh = Math.max(110, Math.round(sh + ev.clientY - sy));
+        if (!nr) { span = Math.max(3, Math.min(12, Math.round((sw + ev.clientX - sx + 18) / col))); el.style.setProperty("--w", span); }
+        el.style.setProperty("--h", nh + "px"); el.setAttribute("data-h", "1");
       }
     }
     function up() {
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
       el.classList.remove("dragging"); dlBusy = false;
       var L = dlGet(), pid = el.getAttribute("data-pid"); L.order = [].map.call(dGrid.children, function (c) { return c.getAttribute("data-pid"); });
-      if (z && span) L.size[pid] = { w: span, h: nh };
+      if (z && nr && nh) L.hm[pid] = nh;
+      else if (z && span) L.size[pid] = { w: span, h: nh };
       saveLayout(L); render();
     }
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
   });
   dGrid.addEventListener("dblclick", function (e) {
     var z = e.target.closest(".rz"), el = e.target.closest(".dp"); if (!z || !el) return;
-    var L = dlGet(), pid = el.getAttribute("data-pid"), cur = L.size[pid] || {}; L.size[pid] = { w: cur.w }; saveLayout(L); render();
+    var L = dlGet(), pid = el.getAttribute("data-pid"), cur = L.size[pid] || {};
+    if (narrowGrid()) delete L.hm[pid]; else L.size[pid] = { w: cur.w };
+    saveLayout(L); render();
   });
   var swallow = false, wiggle = false;
   /* touch: after a long press the accounts keep wiggling (like the iPhone Home Screen) until you tap anywhere else */
@@ -3658,7 +3670,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (typeof acctDlg !== "undefined" && acctDlg.open) renderAcctHist();
     var days = byDay();
     renderHeader(days);
-    if (state.view === "dash" || state.view === "rep") { renderDash(); renderReport(); renderBudget(days); renderGrid(days); renderDay(days); }
+    if (state.view === "dash" || state.view === "rep") { renderDash(); renderReport(); renderBudget(days); }
     else if (state.view === "rec") renderRecList();
     else renderRates();
     runRecurring();
