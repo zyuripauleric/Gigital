@@ -811,6 +811,12 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   #dAccts .acct .ab { font-size: clamp(13px, 12cqw, 16.5px); }
   #dAccts .acct .as, #dAccts .acct .ao { font-size: 11px; }
 }
+
+/* Sheets ride above the iOS keyboard */
+@media (max-width: 699px) {
+  #acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { inset: auto 0 var(--kb, 0px) 0; transition: bottom 0.2s ease-out; }
+  .kbd #acctDlg, .kbd #txDlg, .kbd #recDlg, .kbd #catDlg, .kbd #pickDlg { padding-bottom: 14px; border-radius: 24px; max-height: calc(var(--vvh, 100dvh) - 8px); }
+}
 </style>
 <script>
 (function () {
@@ -4082,7 +4088,19 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* track the real visible height (iOS toolbars / keyboard) so popups never exceed the screen */
   (function () {
     var vv = window.visualViewport;
-    function set() { document.documentElement.style.setProperty("--vvh", (vv ? vv.height : window.innerHeight) + "px"); }
+    function set() {
+      var h = vv ? vv.height : window.innerHeight, root = document.documentElement;
+      /* iOS draws the keyboard over the page without resizing it: measure how much of the bottom is covered so sheets sit above it */
+      var kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+      root.style.setProperty("--vvh", h + "px");
+      root.style.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
+      root.classList.toggle("kbd", kb > 60);
+    }
+    document.addEventListener("focusin", function (e) {
+      var el = e.target, dlg = el.closest && el.closest("dialog");
+      if (!dlg || !/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+      setTimeout(function () { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 320);
+    });
     set(); if (vv) { vv.addEventListener("resize", set); vv.addEventListener("scroll", set); } window.addEventListener("resize", set);
   })();
 </script>
