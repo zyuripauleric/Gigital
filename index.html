@@ -600,6 +600,23 @@ body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidde
   max-height: calc(var(--vvh, 100dvh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
 dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 12px; padding: 14px 20px 10px; background: var(--surface); border-radius: 22px 22px 0 0; }
+/* My accounts: always 4 per row, compact on phones; drag to reorder (touch: press and hold) */
+#dAccts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+#dAccts .acct { min-width: 0; touch-action: manipulation; -webkit-touch-callout: none; }
+#dAccts .acct .an { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+#dAccts .acct .an > span:last-child { overflow-wrap: anywhere; line-height: 1.2; }
+#dAccts .acct.dragging { opacity: 0.5; transform: scale(1.04); box-shadow: 0 10px 24px -10px rgba(0,0,0,.6); touch-action: none; }
+#dAccts .acct.pressing { transform: scale(0.97); }
+.acsz { display: none !important; }
+@media (max-width: 699px) {
+  #dAccts { gap: 6px; }
+  #dAccts .acct { padding: 8px 6px; border-radius: 12px; gap: 2px; }
+  #dAccts .acct .an { font-size: 11px; font-weight: 600; }
+  #dAccts .acct { container-type: inline-size; padding: 8px 5px; }
+  #dAccts .acct .ab { font-size: min(12px, 12.6cqw); letter-spacing: -0.03em; white-space: nowrap; overflow: hidden; }
+  #dAccts .acct .as, #dAccts .acct .ao { font-size: 9px; line-height: 1.2; overflow-wrap: anywhere; }
+  #dAccts .acct .wi { width: 20px; height: 20px; border-radius: 6px; }
+}
 </style>
 <script>
 (function () {
@@ -3260,15 +3277,22 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   var swallow = false;
   $("#dAccts").addEventListener("click", function (e) { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true);
   $("#dAccts").addEventListener("pointerdown", function (e) {
-    var c = e.target.closest(".acct[data-wid]"); if (!c || e.button > 0 || (e.pointerType === "touch" && !dEdit)) return;
-    if (dEdit) e.preventDefault();
-    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false;
+    var c = e.target.closest(".acct[data-wid]"); if (!c || e.button > 0) return;
+    var touch = e.pointerType === "touch";
+    if (dEdit && !touch) e.preventDefault();
+    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit, hold = null;
+    if (touch && !dEdit) {
+      c.classList.add("pressing");
+      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; c.classList.remove("pressing"); c.classList.add("dragging"); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
+    }
     function mv(ev) {
+      if (!armed) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 9) { clearTimeout(hold); c.classList.remove("pressing"); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); } return; }
       if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; c.classList.add("dragging"); }
       var t = document.elementFromPoint(ev.clientX, ev.clientY), o = t && t.closest ? t.closest(".acct[data-wid]") : null;
       if (o && o !== c && o.parentNode === host) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); }
     }
     function up() {
+      clearTimeout(hold); c.classList.remove("pressing");
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
       if (!drag) return;
       c.classList.remove("dragging"); dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
@@ -3277,6 +3301,8 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     }
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
   });
+  $("#dAccts").addEventListener("touchmove", function (e) { if (dlBusy && e.cancelable) e.preventDefault(); }, { passive: false });
+  $("#dAccts").addEventListener("contextmenu", function (e) { e.preventDefault(); });
   $("#aSort").addEventListener("change", function () { var L = dlGet(); L.acct.sort = this.value; saveLayout(L); render(); });
   $("#aSize").addEventListener("input", function () { $("#dAccts").style.setProperty("--amin", this.value + "px"); });
   $("#aSize").addEventListener("change", function () { var L = dlGet(); L.acct.min = +this.value; saveLayout(L); render(); });
