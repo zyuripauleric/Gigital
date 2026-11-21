@@ -651,9 +651,12 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
             <button type="button" role="menuitem" id="rExportX">Export Excel</button>
             <button type="button" role="menuitem" id="rImport">Bulk upload (CSV or Excel)</button>
             <button type="button" role="menuitem" id="rTemplate">Download upload template</button>
+            <button type="button" role="menuitem" id="rBackup">Back up everything (file)</button>
+            <button type="button" role="menuitem" id="rRestore">Restore from backup</button>
           </div>
         </div>
         <input type="file" id="rImportFile" accept=".csv,.xlsx,.xls,text/csv" hidden>
+        <input type="file" id="rRestoreFile" accept=".json,application/json" hidden>
       </div>
     </div>
     <p class="err" id="rErr" role="alert"></p>
@@ -3391,6 +3394,38 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       }, function (e) { clearTimeout(timer); setStatus("Live sync stopped (" + ((e && e.code) || "error") + "). Reload the page to reconnect.", true); });
     });
   }).catch(function () { useLocal(); });
+  /* ===== Backup / Restore: everything the app keeps on this device (accounts, transactions, categories, budgets, settings) ===== */
+  (function () {
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    $("#rBackup").addEventListener("click", function () {
+      var data = {}, n = 0;
+      try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf("wl-") === 0) { data[k] = localStorage.getItem(k); n++; } } } catch (e) {}
+      if (!n) { rmsg("Nothing to back up yet.", true); return; }
+      var d = new Date(), pad = function (x) { return (x < 10 ? "0" : "") + x; };
+      var name = "wallet-backup-" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + ".json";
+      var json = JSON.stringify({ app: "wallet", version: 1, saved: d.toISOString(), data: data });
+      saveFile(name, json, "application/json").then(function (res) {
+        if (res === "ok") rmsg("Backup saved: " + name + ". Keep it in Files or iCloud."); else if (res === "err") rmsg("Could not save the backup.", true);
+      });
+    });
+    $("#rRestore").addEventListener("click", function () { $("#rRestoreFile").click(); });
+    $("#rRestoreFile").addEventListener("change", function () {
+      var f = this.files && this.files[0], inp = this; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var obj; try { obj = JSON.parse(rd.result); } catch (e) { obj = null; }
+        if (!obj || obj.app !== "wallet" || !obj.data || typeof obj.data !== "object") { rmsg("That is not a Wallet backup file.", true); inp.value = ""; return; }
+        if (!window.confirm("Restore this backup? It replaces everything currently in the app on this device.")) { inp.value = ""; return; }
+        try {
+          var rm = []; for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf("wl-") === 0) rm.push(k); }
+          rm.forEach(function (k) { localStorage.removeItem(k); });
+          Object.keys(obj.data).forEach(function (k) { if (k.indexOf("wl-") === 0 && typeof obj.data[k] === "string") localStorage.setItem(k, obj.data[k]); });
+          rmsg("Backup restored. Reloading…"); setTimeout(function () { location.reload(); }, 600);
+        } catch (e) { rmsg("Could not restore the backup.", true); }
+      };
+      rd.readAsText(f);
+    });
+  })();
 })();
 </script>
 <script>
