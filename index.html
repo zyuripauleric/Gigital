@@ -618,6 +618,12 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   #dAccts .acct .as, #dAccts .acct .ao { font-size: 9px; line-height: 1.2; overflow-wrap: anywhere; }
   #dAccts .acct .wi { width: 20px; height: 20px; border-radius: 6px; }
 }
+/* while dragging: the other accounts gently float/wiggle (like rearranging apps on the iPhone Home Screen) */
+@keyframes acctFloat { 0% { transform: rotate(-1.2deg) translateY(0); } 50% { transform: rotate(1.2deg) translateY(-2px); } 100% { transform: rotate(-1.2deg) translateY(0); } }
+#dAccts.sorting .acct:not(.dragging) { animation: acctFloat .5s ease-in-out infinite; }
+#dAccts.sorting .acct:not(.dragging):nth-child(2n) { animation-delay: -.25s; }
+#dAccts.sorting .acct:not(.dragging):nth-child(3n) { animation-duration: .6s; }
+@media (prefers-reduced-motion: reduce) { #dAccts.sorting .acct:not(.dragging) { animation: none; } }
 </style>
 <script>
 (function () {
@@ -3284,24 +3290,32 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit, hold = null, gx = 0, gy = 0, lx = sx, ly = sy;
     var pan = c.closest("[data-pid]") || c.closest(".panel");
     function grab() { var r = c.getBoundingClientRect(); gx = sx - r.left; gy = sy - r.top; if (pan) { pan.style.position = "relative"; pan.style.zIndex = "60"; } }
+    var prev = null;
+    function snap() { prev = new Map(); [].forEach.call(host.querySelectorAll(".acct[data-wid]"), function (el) { if (el !== c) { var r = el.getBoundingClientRect(); prev.set(el, [r.left, r.top]); } }); }
+    function flip() {
+      if (!prev) return; var cur = new Map();
+      prev.forEach(function (pos, el) { var r = el.getBoundingClientRect(), dx = pos[0] - r.left, dy = pos[1] - r.top; cur.set(el, [r.left, r.top]);
+        if (dx || dy) { try { el.animate([{ translate: dx + "px " + dy + "px" }, { translate: "0 0" }], { duration: 200, easing: "ease-out" }); } catch (x) {} } });
+      prev = cur;
+    }
     function float(x, y) { c.style.transform = "none"; var r = c.getBoundingClientRect(); c.style.transform = "translate(" + (x - gx - r.left) + "px," + (y - gy - r.top) + "px) scale(1.08) rotate(-1.5deg)"; }
     if (touch && !dEdit) {
       c.classList.add("pressing");
-      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; grab(); c.classList.remove("pressing"); c.classList.add("dragging"); float(lx, ly); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
+      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; grab(); c.classList.remove("pressing"); c.classList.add("dragging"); host.classList.add("sorting"); snap(); float(lx, ly); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
     }
     function mv(ev) {
       lx = ev.clientX; ly = ev.clientY;
       if (!armed) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 9) { clearTimeout(hold); c.classList.remove("pressing"); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); } return; }
-      if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; grab(); c.classList.add("dragging"); }
+      if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; grab(); c.classList.add("dragging"); host.classList.add("sorting"); snap(); }
       var t = document.elementFromPoint(ev.clientX, ev.clientY), o = t && t.closest ? t.closest(".acct[data-wid]") : null;
-      if (o && o !== c && o.parentNode === host) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); }
+      if (o && o !== c && o.parentNode === host) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); flip(); }
       float(ev.clientX, ev.clientY);
     }
     function up() {
       clearTimeout(hold); c.classList.remove("pressing");
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
       if (!drag) return;
-      c.classList.remove("dragging"); c.style.transform = ""; if (pan) { pan.style.zIndex = ""; pan.style.position = ""; } dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
+      c.classList.remove("dragging"); host.classList.remove("sorting"); c.style.transform = ""; if (pan) { pan.style.zIndex = ""; pan.style.position = ""; } dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
       var L = dlGet(); L.acct.order = [].map.call(host.querySelectorAll(".acct[data-wid]"), function (x) { return x.getAttribute("data-wid"); }); L.acct.sort = "custom";
       saveLayout(L); render();
     }
