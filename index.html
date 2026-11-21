@@ -626,8 +626,10 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 }
 /* phones: the button row (theme, + Wallet, + Category, layout) hides when you scroll down and slides back in when you scroll up */
 @media (max-width: 699px) {
-  .cur.fl { position: fixed; z-index: 45; top: calc(var(--safe-top, 0px) + 10px); left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) - 6px); padding: 6px; border-radius: 22px; background: var(--glass-strong); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); border: 1px solid var(--glass-line); box-shadow: 0 12px 28px -14px rgba(0,0,0,.55); transition: transform .24s ease, opacity .24s ease; }
-  .cur.fl.hide { transform: translateY(calc(-100% - 30px)); opacity: 0; pointer-events: none; }
+  :root { --ctl-h: 36px; --fl-pad: 5px; }
+  .cur.fl { position: fixed; z-index: 45; top: calc(var(--safe-top, 0px) + 16px - var(--fl-pad) - 1px); left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) - var(--fl-pad) - 1px); padding: var(--fl-pad); border-radius: calc(var(--ctl-h) / 2 + var(--fl-pad)); background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: none; backdrop-filter: none; border: 1px solid var(--glass-line); box-shadow: 0 10px 24px -14px rgba(0,0,0,.6); transform: translate3d(0,0,0); will-change: transform, opacity; backface-visibility: hidden; transition: transform .24s ease, opacity .24s ease; }
+  .cur.fl.nt { transition: none; }
+  .cur.fl.hide { transform: translate3d(0, calc(-100% - 30px), 0); opacity: 0; pointer-events: none; }
   .curSpacer { flex: none; }
 }
 /* phones: tidy header — equal summary tiles, one bar of same-height controls, even spacing */
@@ -636,14 +638,14 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .pills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
   .pill { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding: 9px 11px; border-radius: 14px; font-size: 11.5px; line-height: 1.2; container-type: inline-size; white-space: nowrap; }
   .pill b { font-size: min(13.5px, 12.4cqw); letter-spacing: -0.02em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-  .cur { flex-wrap: nowrap; gap: 8px; align-items: stretch; }
-  .cur .btn { min-height: 44px; border-radius: 14px; }
+  .cur { flex-wrap: nowrap; gap: 8px; align-items: center; }
+  .cur .btn { min-height: var(--ctl-h); border-radius: 12px; font-size: 13.5px; }
   .cur #qaWallet { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 8px; white-space: nowrap; }
-  .cur .btn.icon { flex: none; width: 44px; }
-  .themesw { width: 64px; height: 44px; border-radius: 22px; }
-  .themesw .knob { top: 3px; left: 3px; width: 36px; height: 36px; }
-  .themesw[aria-checked="true"] .knob { transform: translateX(20px); }
-  .themesw svg { width: 18px; height: 18px; }
+  .cur .btn.icon { flex: none; width: var(--ctl-h); }
+  .themesw { width: 52px; height: var(--ctl-h); border-radius: 999px; }
+  .themesw .knob { top: 3px; left: 3px; width: calc(var(--ctl-h) - 8px); height: calc(var(--ctl-h) - 8px); }
+  .themesw[aria-checked="true"] .knob { transform: translateX(calc(44px - var(--ctl-h) + 8px)); }
+  .themesw svg { width: 16px; height: 16px; }
   .chiprow .rchip, .chiprow > #disp { border-radius: 14px; }
 }
 /* header: "Wallet" title on the left (tap it to customize the layout); theme switch + "+ Wallet" in the top-right corner */
@@ -652,7 +654,7 @@ header.top h1 { flex: 1 1 auto; min-width: 0; }
 .wtitle { background: none; border: 0; margin: 0; padding: 4px 0; font: inherit; letter-spacing: inherit; color: inherit; text-align: left; border-radius: 8px; -webkit-tap-highlight-color: transparent; transition: color .15s; }
 .wtitle[aria-pressed="true"] { color: var(--accent); }
 header.top .cur { flex: 0 0 auto; margin-left: auto; justify-content: flex-end; flex-wrap: nowrap; }
-header.top .cur #qaWallet { flex: none; width: auto; padding: 0 16px; white-space: nowrap; }
+header.top .cur #qaWallet { flex: none; width: auto; padding: 0 14px; white-space: nowrap; }
 header.top .status { flex: 1 1 100%; margin: 0; }
 header.top .status:empty { display: none; }
 header.top .pills { flex: 1 1 100%; margin-top: 0; }
@@ -3637,19 +3639,31 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (!row) return;
     var spacer = document.createElement("div"); spacer.className = "curSpacer"; spacer.style.display = "none"; row.parentNode.insertBefore(spacer, row);
     var probe = document.createElement("div"); probe.style.cssText = "position:fixed;top:0;left:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none"; document.body.appendChild(probe);
-    var floated = false, lastY = window.scrollY || 0, tick = false, TOP = 16;
+    var floated = false, lastY = window.scrollY || 0, tick = false, TOP = 16, acc = 0, HIDE_AT = 14, SHOW_AT = 10;
     function safe() { var v = probe.offsetHeight || 0; document.documentElement.style.setProperty("--safe-top", v + "px"); return v; }
-    function unfloat() { if (!floated) return; floated = false; row.classList.remove("fl", "hide"); spacer.style.display = "none"; }
+    function unfloat() { if (!floated) return; floated = false; acc = 0; row.classList.remove("fl", "hide", "nt"); spacer.style.display = "none"; }
     function update() {
       tick = false;
       if (!mq.matches || document.body.classList.contains("dlg-lock")) { if (!mq.matches) unfloat(); return; }
-      var y = window.scrollY || 0, dy = y - lastY; lastY = y;
+      /* clamp to the real scroll range so iPhone rubber-banding (negative / past-the-end values) cannot flip the direction */
+      var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      var y = Math.min(Math.max(window.scrollY || 0, 0), maxY), dy = y - lastY; lastY = y;
+      if (!dy) return;
       if (!floated) {
         var r = row.getBoundingClientRect();
-        if (y > 0 && r.top <= safe() + TOP && dy > 0) { spacer.style.height = r.height + "px"; spacer.style.width = r.width + "px"; spacer.style.display = "block"; floated = true; row.classList.add("fl", "hide"); }
+        if (y > 0 && dy > 0 && r.top <= safe() + TOP) {
+          spacer.style.height = r.height + "px"; spacer.style.width = r.width + "px"; spacer.style.display = "block"; floated = true; acc = 0;
+          /* start hidden without animating, so it does not flash at the top before sliding away */
+          row.classList.add("fl", "hide", "nt");
+          requestAnimationFrame(function () { requestAnimationFrame(function () { row.classList.remove("nt"); }); });
+        }
         return;
       }
-      if (Math.abs(dy) > 3) row.classList.toggle("hide", dy > 0);
+      /* keep a running total in one direction; only switch after a real swipe, not a tremor */
+      if ((acc > 0) !== (dy > 0)) acc = 0;
+      acc += dy;
+      if (acc > HIDE_AT) row.classList.add("hide");
+      else if (acc < -SHOW_AT) row.classList.remove("hide");
       if (spacer.getBoundingClientRect().top >= safe() + TOP) unfloat();
     }
     window.addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(update); } }, { passive: true });
