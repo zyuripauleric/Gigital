@@ -816,6 +816,27 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   dialog .dlghead { padding-top: 22px; }
   dialog .dlghead::before { content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: var(--muted); opacity: 0.5; }
 }
+
+/* ===== Rates tab: report fits the screen, no scroll bars ===== */
+#rTable .tw { max-height: none; overflow: visible; }
+#rTable .t { table-layout: fixed; width: 100%; }
+#rTable .t th { position: static; }
+#rTable .t th, #rTable .t td { white-space: normal; overflow-wrap: anywhere; vertical-align: middle; }
+#rTable .t th:first-child, #rTable .t td:first-child { width: 15%; }
+#rTable .t th:last-child, #rTable .t td:last-child { width: 30%; min-width: 0; }
+#rTable .t input[type="number"] { width: 100%; min-width: 0; box-sizing: border-box; }
+#rTable .t td:last-child .btn { margin-top: 4px; }
+@media (max-width: 699px) {
+  /* phones: one card per month, rates in two columns, status underneath */
+  #rTable .tw { border: 0; background: none; border-radius: 0; }
+  #rTable .t, #rTable .t tbody { display: block; width: 100%; }
+  #rTable .t thead { display: none; }
+  #rTable .t tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; margin: 0 0 10px; border: 1px solid var(--glass-line); border-radius: 14px; background: var(--glass); }
+  #rTable .t td, #rTable .t td:first-child, #rTable .t td:last-child { display: block; width: auto; min-width: 0; padding: 0; border: 0; text-align: left; font-size: 14px; }
+  #rTable .t td:first-child { grid-column: 1 / -1; font-weight: 600; font-size: 15px; }
+  #rTable .t td:last-child { grid-column: 1 / -1; }
+  #rTable .t td[data-l]:not(:first-child):not(:last-child)::before { content: attr(data-l); display: block; margin-bottom: 4px; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+}
 </style>
 <script>
 (function () {
@@ -3137,7 +3158,9 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
         return '<input type="number" step="any" min="0" inputmode="decimal" data-rc="' + c + '" data-rm="' + k + '" value="' + Number((R[c] / R[rBase]).toPrecision(6)) + '"' + (locked ? " disabled" : "") + ' aria-label="' + esc(fmtMonth(k) + ": " + c + " per 1 " + rBase) + '">';
       }), [st]));
     });
-    $("#rTable").innerHTML = table(["Month"].concat(cols.map(function (c) { return CUR[c].sym + " " + c; }), ["Status"]), rows);
+    var rHead = ["Month"].concat(cols.map(function (c) { return CUR[c].sym + " " + c; }), ["Status"]);
+    $("#rTable").innerHTML = table(rHead, rows);
+    Array.prototype.forEach.call($("#rTable").querySelectorAll("tbody tr"), function (r) { Array.prototype.forEach.call(r.children, function (td, i) { td.setAttribute("data-l", rHead[i] || ""); }); });
     $("#rSubT").textContent = "How much of each currency 1 " + CUR[rBase].sym + " buys";
     $("#rNote").textContent = rateNote || "Type over any rate to override it. Locked months stay put until you unlock them.";
   }
