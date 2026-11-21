@@ -628,6 +628,9 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 .ledgerbar { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ledgerbar select { flex: 1 1 auto; width: auto; min-width: 0; min-height: 36px; background: var(--glass-strong); font-weight: 600; }
 .ledgerbar .btn.icon { flex: none; width: 36px; min-height: 36px; font-size: 16px; }
+.ledgerinc { flex: 1 1 100%; margin-top: -6px; }
+.ledgerinc .chk { margin-top: 0; min-height: 28px; font-size: 12.5px; color: var(--muted); }
+.ledgerinc .hint { display: block; font-size: 12.5px; }
 .chk { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-top: 8px; font-size: 13.5px; }
 .chk input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
 #dAccts .acct.ishid, .ctile.ishid { opacity: 0.5; border-style: dashed; }
@@ -742,6 +745,10 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       <button type="button" class="btn icon" id="ledgerNew" aria-label="New ledger" title="New ledger">+</button>
       <button type="button" class="btn icon" id="ledgerRen" aria-label="Rename this ledger" title="Rename this ledger">✎</button>
       <button type="button" class="btn icon" id="ledgerDel" aria-label="Delete this ledger" title="Delete this ledger">🗑</button>
+    </div>
+    <div class="ledgerinc">
+      <label class="chk" id="ledgerInAllWrap"><input type="checkbox" id="ledgerInAll" checked><span>Include this ledger in “All ledgers”</span></label>
+      <span class="hint" id="ledgerNote"></span>
     </div>
     <p id="status" class="status" role="status">Loading your wallets…</p>
     <div class="pills" id="pills" aria-label="Snapshot"></div>
@@ -1235,21 +1242,25 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   var LEDGERS = [{ id: "main", name: "Ledger 1" }], ledgerId = "main", RAW = { wallets: [], tx: [], recs: [], goals: [], budgets: [] }, VIEW = {}, WLM = null;
   try { var lj = JSON.parse(localStorage.getItem("wl-ledgers")); if (Array.isArray(lj)) { var lseen = {}; var lk = lj.filter(function (l) { return l && l.id && l.name && !lseen[l.id] && (lseen[l.id] = 1); }); if (lk.length) LEDGERS = lk; } } catch (e) {}
   if (!LEDGERS.some(function (l) { return l.id === "main"; })) LEDGERS.unshift({ id: "main", name: "Ledger 1" });
-  try { var lcur = localStorage.getItem("wl-ledger"); if (LEDGERS.some(function (l) { return l.id === lcur; })) ledgerId = lcur; } catch (e) {}
+  try { var lcur = localStorage.getItem("wl-ledger"); if (lcur === "all" || LEDGERS.some(function (l) { return l.id === lcur; })) ledgerId = lcur; } catch (e) {}
+  function inAllOK(id) { var ok = true; LEDGERS.forEach(function (l) { if (l.id === id && l.inAll === false) ok = false; }); return ok; }
+  function inScope(k, x) { var l = scopeOf(k, x); return ledgerId === "all" ? inAllOK(l) : l === ledgerId; }
+  function writeLedger() { return ledgerId === "all" ? "main" : ledgerId; }
+  function ledgerName(id) { var n = ""; LEDGERS.forEach(function (l) { if (l.id === id) n = l.name; }); return n; }
   function wlMap() { if (!WLM) { WLM = {}; RAW.wallets.forEach(function (w) { WLM[w.id] = w.ledger || "main"; }); } return WLM; }
   function scopeOf(k, x) { if (k === "tx" || k === "recs") { var l = x && wlMap()[x.wallet]; return l || (x && x.ledger) || "main"; } return (x && x.ledger) || "main"; }
   function bumpView() { WLM = null; VIEW = {}; }
-  function stampLedger(k, x) { if (x && typeof x === "object" && (k === "wallets" || k === "goals" || k === "budgets") && !x.ledger) x.ledger = ledgerId; return x; }
+  function stampLedger(k, x) { if (x && typeof x === "object" && (k === "wallets" || k === "goals" || k === "budgets") && !x.ledger) x.ledger = writeLedger(); return x; }
   function viewOf(k) {
     var v = VIEW[k]; if (v) return v;
-    v = RAW[k].filter(function (x) { return scopeOf(k, x) === ledgerId; });
+    v = RAW[k].filter(function (x) { return inScope(k, x); });
     v.push = function () {
-      for (var i = 0; i < arguments.length; i++) { var x = stampLedger(k, arguments[i]); RAW[k].push(x); if (scopeOf(k, x) === ledgerId) Array.prototype.push.call(v, x); }
+      for (var i = 0; i < arguments.length; i++) { var x = stampLedger(k, arguments[i]); RAW[k].push(x); if (inScope(k, x)) Array.prototype.push.call(v, x); }
       WLM = null; return v.length;
     };
     VIEW[k] = v; return v;
   }
-  function setView(k, arr) { var keep = RAW[k].filter(function (x) { return scopeOf(k, x) !== ledgerId; }); RAW[k] = keep.concat((arr || []).map(function (x) { return stampLedger(k, x); })); bumpView(); }
+  function setView(k, arr) { var keep = RAW[k].filter(function (x) { return !inScope(k, x); }); RAW[k] = keep.concat((arr || []).map(function (x) { return stampLedger(k, x); })); bumpView(); }
   function setRaw(k, arr) { RAW[k] = Array.isArray(arr) ? arr : []; bumpView(); }
   ["wallets", "tx", "recs", "goals", "budgets"].forEach(function (k) {
     RAW[k] = Array.isArray(state[k]) ? state[k] : [];
@@ -1375,7 +1386,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   function failMsg(e) { setStatus("Could not save that (" + ((e && e.code) || "error") + "). Try again.", true); return false; }
   function put(kind, obj) {
     var id = obj.id || gid(kind), o = Object.assign({}, obj); delete o.id;
-    if ((kind === "w" || kind === "g") && !o.ledger) o.ledger = ledgerId;
+    if ((kind === "w" || kind === "g") && !o.ledger) o.ledger = writeLedger();
     var c = colOf(kind);
     if (c) return c.doc(id).set(o).then(function () { return id; }).catch(function (e) { failMsg(e); return null; });
     o.id = id; state[keyOf(kind)].push(o); saveLocal(); render();
@@ -1873,7 +1884,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     wEditId = null; $("#wFormTitle").textContent = "Add account"; $("#wAdd").textContent = "Add account"; $("#wDel").hidden = true;
     setWIcon(""); toggleWIcoPanel(false); $("#wName").value = ""; $("#wOpen").value = ""; $("#wLast4").value = ""; $("#wExp").value = ""; $("#wErr").textContent = ""; $("#wDel").textContent = "Delete account"; $("#wDel").classList.remove("arm");
     $("#wType").value = "Bank"; $("#wLimit").value = ""; $("#wStmt").value = ""; $("#wDue").value = ""; updateWType(); $("#wCur").value = state.disp in CUR ? state.disp : "PHP"; $("#wAdd").disabled = false;
-    $("#wLedger").innerHTML = ledgerOptions(ledgerId); $("#wShow").checked = true; $("#wInRep").checked = true;
+    $("#wLedger").innerHTML = ledgerOptions(writeLedger()); $("#wShow").checked = true; $("#wInRep").checked = true;
   }
   /* popup for adding and editing accounts */
   var acctDlg = $("#acctDlg"), dlgId = null;
@@ -2336,7 +2347,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     var name = $("#wName").value.trim(), err = $("#wErr"), ot = $("#wOpen").value.trim(), open = ot === "" ? 0 : evalExpr(ot, $("#wCur").value);
     if (!name) { err.textContent = "Give the account a name."; $("#wName").focus(); return; }
     if (!isFinite(open)) { err.textContent = "The opening balance must be a number."; $("#wOpen").focus(); return; }
-    var cur = $("#wCur").value, ex = $("#wExp").value.trim(), o = { name: name, type: $("#wType").value, cur: cur, opening: rnd(($("#wType").value === "Credit card" ? -open : open) + 0, cur), last4: $("#wLast4").value.replace(/\D/g, "").slice(0, 4), exp: ex, icon: wIcon, ledger: $("#wLedger").value || ledgerId, hidden: !$("#wShow").checked, noRep: !$("#wInRep").checked };
+    var cur = $("#wCur").value, ex = $("#wExp").value.trim(), o = { name: name, type: $("#wType").value, cur: cur, opening: rnd(($("#wType").value === "Credit card" ? -open : open) + 0, cur), last4: $("#wLast4").value.replace(/\D/g, "").slice(0, 4), exp: ex, icon: wIcon, ledger: $("#wLedger").value || writeLedger(), hidden: !$("#wShow").checked, noRep: !$("#wInRep").checked };
     if (ex && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(ex)) { err.textContent = "Expiry should look like 08/27."; $("#wExp").focus(); return; }
     if ($("#wType").value === "Credit card") {
       var lt = $("#wLimit").value.trim(), lim = lt === "" ? 0 : evalExpr(lt, cur), sd = parseInt($("#wStmt").value, 10) || 0, dd = parseInt($("#wDue").value, 10) || 0;
@@ -3206,7 +3217,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (document.activeElement !== $("#aSize")) $("#aSize").value = min;
     host.innerHTML = ws.length ? ws.map(function (w) {
       var v = b[w.id] || 0;
-      return '<button type="button" class="acct' + (w.hidden ? ' ishid' : '') + (w.noRep ? ' norep' : '') + '" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
+      return '<button type="button" class="acct' + (w.hidden ? ' ishid' : '') + (w.noRep ? ' norep' : '') + '" title="Click to add a transaction or edit this account" data-wid="' + esc(w.id) + '" data-sc="wallets"><span class="an'+'">' + walletIcon(w) + '<span>' + esc(w.name) + '</span></span><span class="ab ' + (v < 0 ? "loss" : "") + '">' + D(conv(v, w.cur)) + '</span><span class="as">' + esc(w.type) + (w.last4 ? " ••" + esc(w.last4) : "") + " · " + w.cur + (ledgerId === "all" ? " · " + esc(ledgerName(w.ledger || "main")) : "") + '</span><span class="ao">' + (w.cur !== state.disp ? money(v, w.cur) : "") + "</span></button>";
     }).join("") : '<p class="empty">No accounts yet. <button type="button" class="linkbtn" data-addacct>Add an account</button> or <button type="button" class="linkbtn" id="seedBtn">load a few examples</button>.</p>';
   }
   function nextDue(day) {
@@ -3436,7 +3447,7 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
     if (!name) { err.textContent = "Give the budget a name."; $("#uName").focus(); return; }
     if (!isFinite(v) || v <= 0) { err.textContent = "The amount must be a number above 0."; $("#uAmt").focus(); return; }
     var o = { name: name, amount: rnd(v, state.disp), cur: state.disp, cats: $("#uCats").value.trim() };
-    if (!uEditId) o.ledger = ledgerId;
+    if (!uEditId) o.ledger = writeLedger();
     if (uEditId) state.budgets = state.budgets.map(function (x) { return x.id === uEditId ? Object.assign({}, x, o) : x; });
     else { o.id = gid("u"); o.createdAt = Date.now(); state.budgets = state.budgets.concat([o]); }
     saveBudgets(); closeBudgetForm();
@@ -3698,25 +3709,37 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
   /* ===== Ledger switcher ===== */
   (function () {
     var sel = $("#ledgerSel");
-    function fill() { sel.innerHTML = ledgerOptions(ledgerId); }
-    function name(id) { var n = ""; LEDGERS.forEach(function (l) { if (l.id === id) n = l.name; }); return n; }
+    function fill() {
+      sel.innerHTML = ledgerOptions(ledgerId) + '<option value="all"' + (ledgerId === "all" ? " selected" : "") + ">All ledgers (combined)</option>";
+      var all = ledgerId === "all";
+      $("#ledgerInAllWrap").hidden = all; $("#ledgerInAll").checked = inAllOK(ledgerId);
+      var inc = LEDGERS.filter(function (l) { return l.inAll !== false; }).map(function (l) { return l.name; });
+      $("#ledgerNote").textContent = all ? (inc.length ? "Combined: " + inc.join(" + ") + ". New accounts go to the ledger you choose in the account form." : "No ledger is included. Switch one on in its own view.") : "";
+      $("#ledgerNote").hidden = !all;
+    }
+    function name(id) { return ledgerName(id); }
     function taken(n, except) { return LEDGERS.some(function (l) { return l.id !== except && l.name.toLowerCase() === n.toLowerCase(); }); }
     function switchTo(id) {
       ledgerId = id; saveLedgers(); bumpView(); state.wSel = null; state.lastWallet = null; state.showHid = false;
       fill(); render();
     }
     sel.addEventListener("change", function () { switchTo(sel.value); });
+    $("#ledgerInAll").addEventListener("change", function () {
+      var on = this.checked; LEDGERS.forEach(function (l) { if (l.id === ledgerId) l.inAll = on; }); saveLedgers(); bumpView(); fill(); render();
+    });
     $("#ledgerNew").addEventListener("click", function () {
       var n = window.prompt("Name the new ledger (for example, a person's name):", ""); if (n == null) return; n = n.trim().slice(0, 30); if (!n) return;
       if (taken(n, null)) { window.alert("There is already a ledger with that name."); return; }
       var id = gid("L"); LEDGERS.push({ id: id, name: n }); switchTo(id);
     });
     $("#ledgerRen").addEventListener("click", function () {
+      if (ledgerId === "all") { window.alert("Pick a single ledger first, then rename it."); return; }
       var n = window.prompt("Rename this ledger:", name(ledgerId)); if (n == null) return; n = n.trim().slice(0, 30); if (!n) return;
       if (taken(n, ledgerId)) { window.alert("There is already a ledger with that name."); return; }
       LEDGERS.forEach(function (l) { if (l.id === ledgerId) l.name = n; }); saveLedgers(); fill(); renderAccounts();
     });
     $("#ledgerDel").addEventListener("click", function () {
+      if (ledgerId === "all") { window.alert("Pick a single ledger first, then delete it."); return; }
       if (ledgerId === "main") { window.alert("The first ledger can't be deleted, but you can rename it."); return; }
       var used = RAW.wallets.some(function (w) { return (w.ledger || "main") === ledgerId; });
       if (used) { window.alert("This ledger still has accounts. Move them to another ledger (Account maintenance, Ledger) or delete them first."); return; }
