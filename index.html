@@ -605,7 +605,8 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 #dAccts .acct { min-width: 0; touch-action: manipulation; -webkit-touch-callout: none; }
 #dAccts .acct .an { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
 #dAccts .acct .an > span:last-child { overflow-wrap: anywhere; line-height: 1.2; }
-#dAccts .acct.dragging { opacity: 0.5; transform: scale(1.04); box-shadow: 0 10px 24px -10px rgba(0,0,0,.6); touch-action: none; }
+#dAccts .acct.dragging { position: relative; z-index: 20; opacity: 0.96; pointer-events: none; touch-action: none; transition: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 22px 38px -12px rgba(0,0,0,.55), 0 6px 14px -6px rgba(0,0,0,.4); }
+#dAccts .acct.settling { transition: transform .18s ease-out, box-shadow .18s ease-out; }
 #dAccts .acct.pressing { transform: scale(0.97); }
 .acsz { display: none !important; }
 @media (max-width: 699px) {
@@ -3280,22 +3281,27 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     var c = e.target.closest(".acct[data-wid]"); if (!c || e.button > 0) return;
     var touch = e.pointerType === "touch";
     if (dEdit && !touch) e.preventDefault();
-    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit, hold = null;
+    var host = $("#dAccts"), sx = e.clientX, sy = e.clientY, drag = false, armed = !touch || dEdit, hold = null, gx = 0, gy = 0, lx = sx, ly = sy;
+    var pan = c.closest("[data-pid]") || c.closest(".panel");
+    function grab() { var r = c.getBoundingClientRect(); gx = sx - r.left; gy = sy - r.top; if (pan) { pan.style.position = "relative"; pan.style.zIndex = "60"; } }
+    function float(x, y) { c.style.transform = "none"; var r = c.getBoundingClientRect(); c.style.transform = "translate(" + (x - gx - r.left) + "px," + (y - gy - r.top) + "px) scale(1.08) rotate(-1.5deg)"; }
     if (touch && !dEdit) {
       c.classList.add("pressing");
-      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; c.classList.remove("pressing"); c.classList.add("dragging"); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
+      hold = setTimeout(function () { armed = true; drag = true; dlBusy = true; grab(); c.classList.remove("pressing"); c.classList.add("dragging"); float(lx, ly); try { navigator.vibrate && navigator.vibrate(15); } catch (x) {} }, 380);
     }
     function mv(ev) {
+      lx = ev.clientX; ly = ev.clientY;
       if (!armed) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 9) { clearTimeout(hold); c.classList.remove("pressing"); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); } return; }
-      if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; c.classList.add("dragging"); }
+      if (!drag) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 7) return; drag = true; dlBusy = true; grab(); c.classList.add("dragging"); }
       var t = document.elementFromPoint(ev.clientX, ev.clientY), o = t && t.closest ? t.closest(".acct[data-wid]") : null;
       if (o && o !== c && o.parentNode === host) { if (c.compareDocumentPosition(o) & 4) o.after(c); else o.before(c); }
+      float(ev.clientX, ev.clientY);
     }
     function up() {
       clearTimeout(hold); c.classList.remove("pressing");
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
       if (!drag) return;
-      c.classList.remove("dragging"); dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
+      c.classList.remove("dragging"); c.style.transform = ""; if (pan) { pan.style.zIndex = ""; pan.style.position = ""; } dlBusy = false; swallow = true; setTimeout(function () { swallow = false; }, 0);
       var L = dlGet(); L.acct.order = [].map.call(host.querySelectorAll(".acct[data-wid]"), function (x) { return x.getAttribute("data-wid"); }); L.acct.sort = "custom";
       saveLayout(L); render();
     }
