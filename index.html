@@ -240,13 +240,6 @@ form { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid v
 /* category / subcategory dropdown: our own list, so it opens on a tap on every phone and browser */
 input[data-cb] { padding-right: 32px; background-repeat: no-repeat; background-position: right 11px center; background-size: 12px 8px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a9a94' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-.cbpop { position: fixed; z-index: 2000; box-sizing: border-box; margin: 0; padding: 4px; list-style: none; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35); }
-.cbpop[hidden] { display: none; }
-.cbpop li { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 7px; font-size: 14px; color: var(--ink); cursor: pointer; }
-.cbpop li.on, .cbpop li:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.cbpop li.sel { font-weight: 600; }
-.cbpop li.none { color: var(--muted); cursor: default; }
 /* small screens: nothing in the header may be wider than the screen */
 html, body { max-width: 100%; overflow-x: clip; }
 .top > div, .cur { min-width: 0; max-width: 100%; }
@@ -297,9 +290,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 #dAccts .empty { margin: 0; grid-column: 1 / -1; }
 .asort { display: none; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-left: auto; } .asort select { width: auto; padding: 4px 26px 4px 10px; font-size: 12.5px; border-radius: 10px; background-color: var(--glass-strong); }
 #dAccts .acct { cursor: pointer; user-select: none; -webkit-user-select: none; }
-#acctDlg, #txDlg, #recDlg, #catDlg { width: min(520px, calc(100vw - 28px)); max-height: calc(100vh - 28px); padding: 18px 20px 20px; border: 1px solid var(--glass-line); border-radius: 22px; color: var(--ink); background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02)), var(--surface); box-shadow: inset 0 1px 0 var(--edge), 0 30px 70px -20px rgba(0, 0, 0, 0.6); overflow: auto; }
-#acctDlg::backdrop, #txDlg::backdrop, #recDlg::backdrop, #catDlg::backdrop { background: rgba(5, 10, 9, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-#acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open] { animation: dlgin 0.16s ease-out; } @keyframes dlgin { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+#acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg { width: min(520px, calc(100vw - 28px)); max-height: calc(100vh - 28px); padding: 18px 20px 20px; border: 1px solid var(--glass-line); border-radius: 22px; color: var(--ink); background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02)), var(--surface); box-shadow: inset 0 1px 0 var(--edge), 0 30px 70px -20px rgba(0, 0, 0, 0.6); overflow: auto; }
+#acctDlg::backdrop, #txDlg::backdrop, #recDlg::backdrop, #catDlg::backdrop, #pickDlg::backdrop { background: rgba(5, 10, 9, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+#acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open] { animation: dlgin 0.16s ease-out; } @keyframes dlgin { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
 /* bulk select + delete */
 .bulkbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px 6px 12px; border: 1px solid var(--accent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .bulkbar .btn { flex: none; white-space: nowrap; }
@@ -353,7 +346,7 @@ html, body { max-width: 100%; overflow-x: clip; }
   #aHist { margin-top: 16px; padding: 14px 0 0; border: 0; border-top: 1px solid var(--hair); border-radius: 0; background: none; box-shadow: none; }
   #aHist .hlist { max-height: 340px; }
 }
-@media (prefers-reduced-motion: reduce) { #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #acctDlg[open], #txDlg[open], #recDlg[open], #catDlg[open], #pickDlg[open] { animation: none; } }
 .dlghead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; } .dlghead h3 { font-family: var(--font-display); font-size: 18px; margin: 0; }
 #acctDlg form, #txDlg form, #recDlg form { display: flex; flex-direction: column; gap: 12px; border-top: 0; padding-top: 0; }
 .catform { display: flex; flex-direction: column; gap: 14px; }
@@ -577,7 +570,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 }
 
 /* Popups: stay inside the visible screen (iOS-safe), scroll inside themselves, never scroll the page behind */
-#acctDlg, #txDlg, #recDlg, #catDlg {
+#acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg {
   box-sizing: border-box; position: fixed; inset: 0; margin: auto; height: fit-content;
   width: min(520px, calc(100% - 24px)); max-width: calc(100% - 24px);
   max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px);
@@ -586,7 +579,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 #acctDlg .dlgmain { max-height: none; overflow: visible; }
 @media (min-width: 960px) { #acctDlg { overflow: visible; } #acctDlg .dlgmain { max-height: calc(100dvh - 72px); overflow-y: auto; overscroll-behavior: contain; } }
 .row2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-#acctDlg input, #acctDlg select, #txDlg input, #txDlg select, #recDlg input, #recDlg select, #catDlg input, #catDlg select { min-width: 0; max-width: 100%; }
+#acctDlg input, #acctDlg select, #txDlg input, #txDlg select, #recDlg input, #recDlg select, #catDlg input, #catDlg select, #pickDlg input { min-width: 0; max-width: 100%; }
 dialog input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; width: 100%; text-align: left; }
 body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 /* iOS Safari zooms the page when a focused field's text is under 16px: keep fields at 16px on touch screens */
@@ -594,7 +587,7 @@ body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidde
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
 }
 /* Popup header (with the close button) stays pinned while the popup scrolls, and the popup respects the iPhone notch / home bar and keyboard */
-#acctDlg, #txDlg, #recDlg, #catDlg {
+#acctDlg, #txDlg, #recDlg, #catDlg, #pickDlg {
   inset: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0;
   max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   max-height: calc(var(--vvh, 100dvh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
@@ -645,7 +638,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .pill b { font-size: min(13.5px, 12.4cqw); letter-spacing: -0.02em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .cur { flex-wrap: nowrap; gap: 8px; align-items: stretch; }
   .cur .btn { min-height: 44px; border-radius: 14px; }
-  .cur #qaWallet, .cur #qaCat { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 8px; white-space: nowrap; }
+  .cur #qaWallet { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 8px; white-space: nowrap; }
   .cur .btn.icon { flex: none; width: 44px; }
   .themesw { width: 64px; height: 44px; border-radius: 22px; }
   .themesw .knob { top: 3px; left: 3px; width: 36px; height: 36px; }
@@ -653,6 +646,30 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .themesw svg { width: 18px; height: 18px; }
   .chiprow .rchip, .chiprow > #disp { border-radius: 14px; }
 }
+
+/* category picker + subcategory bubbles */
+.catpick { cursor: pointer; text-overflow: ellipsis; caret-color: transparent; }
+.subrow { margin-top: 10px; }
+.subrow .sublbl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.chp { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 15px; border: 1px solid transparent; border-radius: 999px; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.2; cursor: pointer; max-width: 100%; text-align: left; overflow-wrap: anywhere; }
+.chp:hover { border-color: var(--accent); }
+.chp[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); font-weight: 600; }
+.chp.add { border: 1px dashed var(--accent); background: transparent; color: var(--accent); font-weight: 600; }
+.chp.gear { width: 46px; padding: 0; color: var(--muted); }
+.chp.gear:hover { color: var(--ink); }
+.chp svg { width: 18px; height: 18px; flex: none; }
+.pickbtns { display: flex; align-items: center; gap: 8px; }
+.pickhint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.pickgrp { display: flex; gap: 12px; align-items: flex-start; }
+.pickgrp .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 15px; background: var(--loss); }
+.pickgrp .dot.in { background: var(--win); }
+.pickadd { margin-top: 14px; }
+#pickDlg { max-height: min(640px, calc(100vh - 28px)); }
+.catlist li.ed { gap: 8px; } .catlist li.ed input { flex: 1 1 0; min-width: 0; }
+.catlist .acts { display: flex; gap: 6px; flex: none; }
+.catlist li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.catlist { max-height: 240px; }
 </style>
 <script>
 (function () {
@@ -678,7 +695,6 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
         </span>
       </button>
       <button type="button" class="btn" id="qaWallet">+ Wallet</button>
-      <button type="button" class="btn" id="qaCat">+ Category</button>
       <button type="button" class="btn icon" id="custHdr" aria-pressed="false" title="Customize layout" aria-label="Customize layout" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       <label class="sr" for="disp">Show amounts in</label>
       <select id="disp"></select>
@@ -851,9 +867,10 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
           <small class="hint" id="xferHint"></small>
           <div class="field" id="catBox">
             <label for="cat">Category</label>
-            <input type="text" id="cat" maxlength="30" list="catList" placeholder="Food &amp; Drinks" autocomplete="off">
+            <input type="text" id="cat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off">
             <datalist id="catList"></datalist>
-            <label for="sub" style="margin-top:6px">Subcategory (optional)</label><input type="text" id="sub" maxlength="40" list="subList" placeholder="Pick or type" autocomplete="off"><datalist id="subList"></datalist>
+            <input type="hidden" id="sub"><datalist id="subList"></datalist>
+            <div class="subrow" id="subRow" hidden></div>
           </div>
           <div class="field"><label for="note">Note (optional)</label><input type="text" id="note" maxlength="140" placeholder="Where, what for" autocomplete="off"></div>
           <div class="field" id="tDateRow" hidden><label for="tDate">Date</label><input type="date" id="tDate"></div>
@@ -965,7 +982,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
         <div class="field" id="rChargeNameBox" hidden><label for="rChargeName">Charge name</label><input type="text" id="rChargeName" maxlength="30" placeholder="Processing fee" autocomplete="off"></div>
         <div class="calc" id="rCalc" hidden></div>
         <div class="row2">
-          <div class="field"><label for="rCat">Category</label><input type="text" id="rCat" maxlength="30" list="rCatList" placeholder="Bills" autocomplete="off"><datalist id="rCatList"></datalist><label for="rSub" style="margin-top:6px">Subcategory (optional)</label><input type="text" id="rSub" maxlength="40" list="rSubList" placeholder="Pick or type" autocomplete="off"><datalist id="rSubList"></datalist></div>
+          <div class="field"><label for="rCat">Category</label><input type="text" id="rCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="rCatList"></datalist><input type="hidden" id="rSub"><datalist id="rSubList"></datalist><div class="subrow" id="rSubRow" hidden></div></div>
           <div class="field" id="rPayeeBox"><label for="rPayee">Payee (optional)</label><input type="text" id="rPayee" maxlength="40" autocomplete="off"></div>
         </div>
         <small class="hint" id="rHint"></small>
@@ -995,7 +1012,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
         <div class="field" id="eAmt2Box"><label for="eAmt2" id="eAmt2L">Amount received</label><input type="text" id="eAmt2" inputmode="decimal" placeholder="auto" autocomplete="off"></div>
       </div>
       <small class="hint" id="eHint"></small>
-      <div class="field" id="eCatBox"><label for="eCat">Category</label><input type="text" id="eCat" maxlength="30" list="eCatList" placeholder="Food &amp; Drinks" autocomplete="off"><datalist id="eCatList"></datalist><label for="eSub" style="margin-top:6px">Subcategory (optional)</label><input type="text" id="eSub" maxlength="40" list="eSubList" placeholder="Pick or type" autocomplete="off"><datalist id="eSubList"></datalist></div>
+      <div class="field" id="eCatBox"><label for="eCat">Category</label><input type="text" id="eCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="eCatList"></datalist><input type="hidden" id="eSub"><datalist id="eSubList"></datalist><div class="subrow" id="eSubRow" hidden></div></div>
       <div class="field"><label for="eNote">Note (optional)</label><input type="text" id="eNote" maxlength="140" placeholder="Where, what for" autocomplete="off"></div>
       <p class="err" id="eErr" role="alert"></p>
       <div class="formbtns"><button class="btn primary" type="submit" id="eSave">Save changes</button><button class="btn" type="button" id="eCancel">Cancel</button><button class="btn" type="button" id="eDel">Delete</button></div>
@@ -1029,7 +1046,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       </div>
       <small class="hint" id="aXferHint"></small>
       <div class="row2">
-        <div class="field" id="aCatBox"><label for="aCat">Category</label><input type="text" id="aCat" maxlength="30" list="aCatList" placeholder="Food &amp; Drinks" autocomplete="off"><datalist id="aCatList"></datalist><label for="aSub" style="margin-top:6px">Subcategory (optional)</label><input type="text" id="aSub" maxlength="40" list="aSubList" placeholder="Pick or type" autocomplete="off"><datalist id="aSubList"></datalist></div>
+        <div class="field" id="aCatBox"><label for="aCat">Category</label><input type="text" id="aCat" class="catpick" data-cb readonly inputmode="none" placeholder="Choose a category" autocomplete="off"><datalist id="aCatList"></datalist><input type="hidden" id="aSub"><datalist id="aSubList"></datalist><div class="subrow" id="aSubRow" hidden></div></div>
         <div class="field"><label for="aPay">Payment type</label>
           <select id="aPay"><option>Cash</option><option>Debit card</option><option>Credit card</option><option>Bank transfer</option><option>E-wallet</option><option>Check</option><option>Other</option></select></div>
       </div>
@@ -1082,23 +1099,33 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     </aside>
   </dialog>
 
+  <dialog id="pickDlg" aria-labelledby="pickT">
+    <div class="dlghead"><h3 id="pickT">Select category</h3><div class="pickbtns"><button type="button" class="btn sm" id="pickClear" hidden>Clear</button><button type="button" class="btn icon sm" id="pickClose" aria-label="Close">✕</button></div></div>
+    <p class="pickhint" id="pickHint"></p>
+    <div class="pickgrp"><span class="dot" id="pickDot" aria-hidden="true"></span><div class="chips" id="pickChips"></div></div>
+    <div class="catrow pickadd" id="pickAddRow" hidden><input type="text" id="pickNew" maxlength="40" placeholder="New category name, e.g. Pets" autocomplete="off" aria-label="New category name"><button type="button" class="btn primary" id="pickAdd">Add</button></div>
+    <p class="err" id="pickErr" role="alert"></p>
+  </dialog>
+
   <dialog id="catDlg" aria-labelledby="catDlgT">
-    <div class="dlghead"><h3 id="catDlgT">Add category or subcategory</h3><button type="button" class="btn icon sm" id="catClose" aria-label="Close">✕</button></div>
+    <div class="dlghead"><h3 id="catDlgT">Categories &amp; subcategories</h3><button type="button" class="btn icon sm" id="catClose" aria-label="Close">✕</button></div>
     <div class="dtabs" id="catKind" role="group" aria-label="Category type">
       <button type="button" data-ck="out" aria-pressed="true">Expense</button>
       <button type="button" data-ck="in" aria-pressed="false">Income</button>
     </div>
     <div class="catform">
-      <div class="field"><label for="catNew">New category</label>
-        <div class="catrow"><input type="text" id="catNew" maxlength="40" placeholder="e.g. Pets" autocomplete="off"><button type="button" class="btn primary" id="catAdd">Add</button></div></div>
-      <div class="field"><label for="catParent">New subcategory</label>
-        <div class="catrow"><select id="catParent" aria-label="Category for the new subcategory"></select><input type="text" id="subNew" maxlength="40" placeholder="e.g. Vet" autocomplete="off" aria-label="Subcategory name"></div>
-        <small class="hint" id="catExisting"></small></div>
-      <button type="button" class="btn" id="subAdd">Add subcategory</button>
+      <div class="field"><label for="catParent">Category</label>
+        <div class="catrow"><select id="catParent" aria-label="Category"></select><button type="button" class="btn sm" id="catRen">Rename</button><button type="button" class="btn sm" id="catDel">Delete</button></div></div>
+      <div class="field" id="catRenBox" hidden><label for="catRenIn">New name for this category</label>
+        <div class="catrow"><input type="text" id="catRenIn" maxlength="40" autocomplete="off"><button type="button" class="btn primary" id="catRenOk">Save</button><button type="button" class="btn" id="catRenNo">Cancel</button></div></div>
+      <h4>Subcategories</h4>
+      <ul class="catlist" id="catSubs"></ul>
+      <div class="field"><label for="subNew">Add subcategory</label>
+        <div class="catrow"><input type="text" id="subNew" maxlength="40" placeholder="e.g. Vet" autocomplete="off"><button type="button" class="btn primary" id="subAdd">Add</button></div></div>
+      <div class="field"><label for="catNew">Add category</label>
+        <div class="catrow"><input type="text" id="catNew" maxlength="40" placeholder="e.g. Pets" autocomplete="off"><button type="button" class="btn" id="catAdd">Add</button></div></div>
       <p class="err" id="catErr" role="alert"></p>
       <p class="status" id="catMsg" role="status"></p>
-      <h4>Your additions</h4>
-      <ul class="catlist" id="catMine"></ul>
     </div>
   </dialog>
 
@@ -1559,6 +1586,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     return [];
   }
   function refreshSub(catSel, listSel, kind) {
+    subChips(catSel);
     var el = $(listSel); if (!el) return;
     var arr = subsOf(kind, $(catSel).value), sig = kind + "|" + $(catSel).value.trim().toLowerCase();
     if (el.getAttribute("data-s") === sig) return;
@@ -1570,65 +1598,88 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     ["input", "change"].forEach(function (ev) { $(x[0]).addEventListener(ev, function () { refreshSub(x[0], x[1], x[2]()); }); });
   });
   $("#rKind").addEventListener("change", function () { refreshSub("#rCat", "#rSubList", rKindNow()); });
-  /* Category dropdown: native <datalist> does not open reliably on phones, so each of these fields gets its own list.
-     It opens on tap, shows every option (filters as you type), and reads the options the app already keeps in the datalists. */
-  (function () {
-    var pop = document.createElement("ul"), cur = null, items = [], hi = -1, ids = {}, picking = false;
-    pop.className = "cbpop"; pop.setAttribute("role", "listbox"); pop.hidden = true;
-    function opts(el) { var dl = document.getElementById(ids[el.id]); return dl ? Array.prototype.map.call(dl.options, function (o) { return o.value; }) : []; }
-    function place() {
-      if (!cur) return;
-      var vv = window.visualViewport, vh = vv ? vv.height : window.innerHeight, top0 = vv ? vv.offsetTop : 0;
-      var r = cur.getBoundingClientRect(), below = top0 + vh - r.bottom - 8, above = r.top - top0 - 8, up = below < 170 && above > below, room = Math.max(96, Math.min(240, up ? above : below));
-      pop.style.left = "0px"; pop.style.top = "0px"; pop.style.width = r.width + "px"; pop.style.maxHeight = room + "px";
-      var o = pop.getBoundingClientRect(), h = pop.offsetHeight, y = up ? r.top - 4 - h : r.bottom + 4;
-      pop.style.left = (r.left - o.left) + "px"; pop.style.top = (y - o.top) + "px";
-    }
-    function draw() {
-      var q = cur.value.trim().toLowerCase(), all = opts(cur), exact = all.some(function (v) { return v.toLowerCase() === q; });
-      items = (!q || exact) ? all : all.filter(function (v) { return v.toLowerCase().indexOf(q) >= 0; });
-      hi = -1;
-      pop.innerHTML = items.length ? items.map(function (v, i) { return '<li role="option" data-i="' + i + '"' + (v.toLowerCase() === q ? ' class="sel"' : "") + ">" + esc(v) + "</li>"; }).join("")
-        : '<li class="none">' + (all.length ? "No match. Keep typing to add a new one." : "Nothing here yet. Type to add one.") + "</li>";
-      place();
-    }
-    function open(el) {
-      cur = el; var host = el.closest("dialog") || document.body; if (pop.parentNode !== host) host.appendChild(pop);
-      pop.hidden = false; el.setAttribute("aria-expanded", "true"); draw();
-      var s = pop.querySelector(".sel"); if (s) pop.scrollTop = Math.max(0, s.offsetTop - 40);
-    }
-    function close() { if (!cur) return; pop.hidden = true; cur.setAttribute("aria-expanded", "false"); hi = -1; }
-    function choose(i) {
-      if (!cur || i < 0 || i >= items.length) return;
-      var el = cur; el.value = items[i]; close(); picking = true;
-      el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true }));
-      picking = false;
-      if (window.matchMedia && matchMedia("(pointer: coarse)").matches) el.blur();
-    }
-    function mark() { Array.prototype.forEach.call(pop.children, function (li, i) { li.classList.toggle("on", i === hi); if (i === hi) li.scrollIntoView({ block: "nearest" }); }); }
-    pop.addEventListener("mousedown", function (e) { e.preventDefault(); });
-    pop.addEventListener("click", function (e) { var li = e.target.closest("li[data-i]"); if (li) choose(+li.getAttribute("data-i")); });
-    ["#cat", "#sub", "#eCat", "#eSub", "#aCat", "#aSub", "#rCat", "#rSub"].forEach(function (sel) {
-      var el = $(sel); if (!el) return;
-      ids[el.id] = el.getAttribute("list"); el.removeAttribute("list");
-      el.setAttribute("data-cb", ""); el.setAttribute("role", "combobox"); el.setAttribute("aria-autocomplete", "list"); el.setAttribute("aria-expanded", "false");
-      el.addEventListener("focus", function () { open(el); });
-      el.addEventListener("click", function () { if (pop.hidden || cur !== el) open(el); });
-      el.addEventListener("input", function () { if (picking) return; if (cur === el && !pop.hidden) draw(); else open(el); });
-      el.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== el) close(); }, 80); });
-      el.addEventListener("keydown", function (e) {
-        if (pop.hidden || cur !== el) { if (e.key === "ArrowDown") { open(el); e.preventDefault(); } return; }
-        if (e.key === "ArrowDown") { hi = Math.min(items.length - 1, hi + 1); mark(); e.preventDefault(); }
-        else if (e.key === "ArrowUp") { hi = Math.max(0, hi - 1); mark(); e.preventDefault(); }
-        else if (e.key === "Enter" && hi >= 0) { choose(hi); e.preventDefault(); }
-        else if (e.key === "Escape") { close(); e.stopPropagation(); e.preventDefault(); }
-        else if (e.key === "Tab") close();
-      });
+  /* Category picker. Tapping Category opens a popup of category bubbles (with "+ Category").
+     The chosen category's subcategories then show as bubbles under the field, and the gear opens the category settings. */
+  var PICK = [
+    { cat: "#cat", sub: "#sub", row: "#subRow", kind: function () { return curKind(); } },
+    { cat: "#aCat", sub: "#aSub", row: "#aSubRow", kind: function () { return aKind(); } },
+    { cat: "#eCat", sub: "#eSub", row: "#eSubRow", kind: function () { return eKind(); } },
+    { cat: "#rCat", sub: "#rSub", row: "#rSubRow", kind: function () { return rKindNow(); } }
+  ];
+  var GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+  function pickOf(catSel) { if (!PICK) return null; for (var i = 0; i < PICK.length; i++) if (PICK[i].cat === catSel) return PICK[i]; return null; }
+  function catsFor(k) { return k === "in" ? CATS["in"].slice() : CATS.out.concat(state.budgets.map(function (u) { return u.name; }).filter(function (n) { return n && CATS.out.indexOf(n) < 0; })); }
+  function subChips(catSel) {
+    var p = pickOf(catSel), row = p && $(p.row); if (!p || !row) return;
+    var k = p.kind(), cat = $(p.cat).value.trim();
+    if (!cat || k === "xfer") { if (!row.hidden) { row.hidden = true; row.innerHTML = ""; } return; }
+    var kk = k === "in" ? "in" : "out", cur = $(p.sub).value.trim(), list = subsOf(kk, cat).slice();
+    if (cur && !ciFind(list, cur)) list.unshift(cur);
+    row.hidden = false;
+    row.innerHTML = '<span class="sublbl">Subcategory (optional)</span><div class="chips">' + list.map(function (x) {
+      return '<button type="button" class="chp" data-s="' + esc(encodeURIComponent(x)) + '" aria-pressed="' + (cur.toLowerCase() === x.toLowerCase()) + '">' + esc(x) + "</button>";
+    }).join("") + '<button type="button" class="chp gear" data-gear aria-label="Add or edit subcategories" title="Add or edit subcategories">' + GEAR + "</button></div>";
+  }
+  function subChipsAll() { PICK.forEach(function (p) { subChips(p.cat); }); }
+  var pickDlg = $("#pickDlg"), pickCur = null;
+  function pickRender() {
+    var p = pickCur, k = p.kind() === "in" ? "in" : "out", cur = $(p.cat).value.trim().toLowerCase();
+    $("#pickDot").className = "dot" + (k === "in" ? " in" : "");
+    $("#pickHint").textContent = k === "in" ? "Income categories" : "Expense categories";
+    $("#pickChips").innerHTML = catsFor(k).map(function (c) {
+      return '<button type="button" class="chp" data-c="' + esc(encodeURIComponent(c)) + '" aria-pressed="' + (c.toLowerCase() === cur) + '">' + esc(c) + "</button>";
+    }).join("") + '<button type="button" class="chp add" data-addc>+ Category</button>';
+    $("#pickClear").hidden = !cur;
+  }
+  function openPick(p) {
+    pickCur = p; $("#pickAddRow").hidden = true; $("#pickNew").value = ""; $("#pickErr").textContent = "";
+    pickRender(); if (!pickDlg.open) pickDlg.showModal();
+  }
+  function choosePick(name) {
+    var p = pickCur; if (!p) return;
+    var cat = $(p.cat), sub = $(p.sub), same = cat.value.trim().toLowerCase() === String(name).toLowerCase();
+    if (!same) sub.value = "";
+    cat.value = name;
+    cat.dispatchEvent(new Event("input", { bubbles: true })); cat.dispatchEvent(new Event("change", { bubbles: true }));
+    pickDlg.close();
+  }
+  function pickAddNew() {
+    var p = pickCur, k = p.kind() === "in" ? "in" : "out", name = $("#pickNew").value.trim().replace(/\s+/g, " ");
+    if (!name) { $("#pickErr").textContent = "Type a category name."; $("#pickNew").focus(); return; }
+    var ex = ciFind(catsFor(k), name); if (ex) { choosePick(ex); return; }
+    var r = createCat(k, name); if (r.err) { $("#pickErr").textContent = r.err; return; }
+    choosePick(r.name);
+  }
+  pickDlg.addEventListener("click", function (e) {
+    var r = pickDlg.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { pickDlg.close(); return; }
+    var c = e.target.closest("[data-c]"); if (c) { choosePick(decodeURIComponent(c.getAttribute("data-c"))); return; }
+    if (e.target.closest("[data-addc]")) { $("#pickAddRow").hidden = false; $("#pickErr").textContent = ""; $("#pickNew").focus(); }
+  });
+  $("#pickClose").addEventListener("click", function () { pickDlg.close(); });
+  $("#pickClear").addEventListener("click", function () {
+    var p = pickCur; if (!p) return;
+    $(p.sub).value = ""; $(p.cat).value = "";
+    $(p.cat).dispatchEvent(new Event("input", { bubbles: true })); $(p.cat).dispatchEvent(new Event("change", { bubbles: true }));
+    pickDlg.close();
+  });
+  $("#pickAdd").addEventListener("click", pickAddNew);
+  $("#pickNew").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); pickAddNew(); } });
+  PICK.forEach(function (p) {
+    var el = $(p.cat), sub = $(p.sub), row = $(p.row); if (!el || !sub || !row) return;
+    /* forms fill these fields from code (edit, reset), so the bubbles follow the value no matter how it changes */
+    var d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    [el, sub].forEach(function (x) { Object.defineProperty(x, "value", { configurable: true, get: function () { return d.get.call(x); }, set: function (v) { d.set.call(x, v); subChips(p.cat); } }); });
+    el.addEventListener("click", function () { openPick(p); });
+    el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") { e.preventDefault(); openPick(p); } });
+    row.addEventListener("click", function (e) {
+      if (e.target.closest("[data-gear]")) { openCatDlg(p.kind() === "in" ? "in" : "out", el.value.trim()); return; }
+      var b = e.target.closest("[data-s]"); if (!b) return;
+      var x = decodeURIComponent(b.getAttribute("data-s"));
+      sub.value = sub.value.trim().toLowerCase() === x.toLowerCase() ? "" : x;
     });
-    window.addEventListener("resize", function () { if (!pop.hidden) place(); });
-    window.addEventListener("scroll", function (e) { if (!pop.hidden && e.target !== pop) place(); }, true);
-    if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { if (!pop.hidden) place(); });
-  })();
+    subChips(p.cat);
+  });
   document.addEventListener("submit", function () { var a = document.activeElement; if (a && a._restore) a._restore(); }, true);
 
   /* ===== Wallets ===== */
@@ -2543,79 +2594,157 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   })();
 
   /* ===== Custom categories and subcategories ===== */
+  /* Until you edit something, the list is the built-in one plus anything you added. The first edit saves the whole list
+     (state.cats.tree) so every category and subcategory, built-in or not, can be renamed or removed. */
   var BASE_TREE = JSON.parse(JSON.stringify(CATTREE));
-  state.cats = { out: {}, "in": {} };
-  try { var sc0 = JSON.parse(localStorage.getItem("wl-cats")); if (sc0 && typeof sc0 === "object") state.cats = { out: sc0.out || {}, "in": sc0["in"] || {} }; } catch (e) {}
+  function normCats(o) {
+    var r = { out: (o && o.out) || {}, "in": (o && o["in"]) || {} };
+    if (o && o.tree && typeof o.tree === "object" && o.tree.out && o.tree["in"]) r.tree = { out: o.tree.out, "in": o.tree["in"] };
+    return r;
+  }
+  state.cats = normCats(null);
+  try { var sc0 = JSON.parse(localStorage.getItem("wl-cats")); if (sc0 && typeof sc0 === "object") state.cats = normCats(sc0); } catch (e) {}
   function ciFind(list, name) { var l = String(name).toLowerCase(), r = null; list.forEach(function (x) { if (r === null && String(x).toLowerCase() === l) r = x; }); return r; }
+  function sameCI(a, b) { return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
   function applyCats() {
     ["out", "in"].forEach(function (k) {
-      var tree = JSON.parse(JSON.stringify(BASE_TREE[k])), cu = state.cats[k] || {};
-      Object.keys(cu).forEach(function (c) {
-        var key = ciFind(Object.keys(tree), c) || c; if (!tree[key]) tree[key] = [];
-        (Array.isArray(cu[c]) ? cu[c] : []).forEach(function (sb) { if (!ciFind(tree[key], sb)) tree[key].push(sb); });
-      });
+      var tree;
+      if (state.cats.tree && state.cats.tree[k]) tree = JSON.parse(JSON.stringify(state.cats.tree[k]));
+      else {
+        tree = JSON.parse(JSON.stringify(BASE_TREE[k])); var cu = state.cats[k] || {};
+        Object.keys(cu).forEach(function (c) {
+          var key = ciFind(Object.keys(tree), c) || c; if (!tree[key]) tree[key] = [];
+          (Array.isArray(cu[c]) ? cu[c] : []).forEach(function (sb) { if (!ciFind(tree[key], sb)) tree[key].push(sb); });
+        });
+      }
+      Object.keys(tree).forEach(function (c) { if (!Array.isArray(tree[c])) tree[c] = []; });
       CATTREE[k] = tree; CATS[k].length = 0; Object.keys(tree).forEach(function (x) { CATS[k].push(x); });
     });
   }
   applyCats();
+  function ensureTree() {
+    if (state.cats.tree && state.cats.tree.out && state.cats.tree["in"]) return;
+    state.cats.tree = { out: JSON.parse(JSON.stringify(CATTREE.out)), "in": JSON.parse(JSON.stringify(CATTREE["in"])) };
+    state.cats.out = {}; state.cats["in"] = {};
+  }
   function saveCats() {
     try { localStorage.setItem("wl-cats", JSON.stringify(state.cats)); } catch (e) {}
     syncPrefs(); applyCats();
     document.querySelectorAll("datalist").forEach(function (d) { d.removeAttribute("data-s"); });
-    render();
+    subChipsAll(); render();
   }
-  var catDlg = $("#catDlg"), catKind = "out";
+  /* past transactions and recurring items follow a rename, so reports and budgets keep grouping them together */
+  function retag(k, test, fields) {
+    var n = 0;
+    state.tx.slice().forEach(function (t) { if (t && t.kind === k && test(t)) { patch("t", t.id, fields); n++; } });
+    (state.recs || []).slice().forEach(function (r) { if (r && (r.kind === "in" ? "in" : "out") === k && test(r)) patch("r", r.id, fields); });
+    return n;
+  }
+  function createCat(k, name) {
+    name = String(name || "").trim().replace(/\s+/g, " ");
+    if (!name) return { err: "Type a category name." };
+    var ex = ciFind(CATS[k], name);
+    if (ex) return { err: "There is already a " + (k === "in" ? "income" : "expense") + " category called " + ex + "." };
+    ensureTree(); state.cats.tree[k][name] = []; saveCats();
+    return { name: name };
+  }
+  var catDlg = $("#catDlg"), catKind = "out", subEdit = null, subArm = null, subArmT = null, catArm = null, catArmT = null;
   function catMsg(t, warn) { $("#catErr").textContent = warn ? t : ""; $("#catMsg").textContent = warn ? "" : t; }
-  function renderCatDlg() {
-    var k = catKind, keep = $("#catParent").value;
+  function renderCatDlg(want) {
+    var k = catKind, keep = want || $("#catParent").value;
     document.querySelectorAll("[data-ck]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ck") === k)); });
     $("#catParent").innerHTML = CATS[k].map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + "</option>"; }).join("");
     if (keep && ciFind(CATS[k], keep)) $("#catParent").value = ciFind(CATS[k], keep);
-    var ex = CATTREE[k][$("#catParent").value] || [];
-    $("#catExisting").textContent = ex.length ? "Already there: " + ex.join(", ") : "No subcategories yet.";
-    var cu = state.cats[k] || {}, h = "";
-    Object.keys(cu).forEach(function (c) {
-      var isBase = !!ciFind(Object.keys(BASE_TREE[k]), c);
-      if (!isBase) h += '<li><span>' + esc(c) + '<small>new category</small></span><button type="button" data-rmc="' + esc(encodeURIComponent(c)) + '">Remove</button></li>';
-      (cu[c] || []).forEach(function (sb) { h += '<li><span>' + esc(sb) + '<small>under ' + esc(c) + '</small></span><button type="button" data-rms="' + esc(encodeURIComponent(c)) + '|' + esc(encodeURIComponent(sb)) + '">Remove</button></li>'; });
-    });
-    $("#catMine").innerHTML = h || '<li class="empty">Nothing added yet.</li>';
+    var cat = $("#catParent").value, subs = cat ? (CATTREE[k][cat] || []) : [];
+    $("#catRen").disabled = !cat; $("#catDel").disabled = !cat;
+    $("#catDel").textContent = catArm === cat && cat ? "Sure?" : "Delete";
+    $("#subNew").disabled = !cat; $("#subAdd").disabled = !cat;
+    $("#catSubs").innerHTML = !cat ? '<li class="empty">Add a category first.</li>' : !subs.length ? '<li class="empty">No subcategories yet. Add one below.</li>' : subs.map(function (x) {
+      var enc = esc(encodeURIComponent(x));
+      if (subEdit === x) return '<li class="ed"><input type="text" maxlength="40" value="' + esc(x) + '" data-ri aria-label="Subcategory name"><span class="acts"><button type="button" data-rok>Save</button><button type="button" data-rno>Cancel</button></span></li>';
+      return '<li><span>' + esc(x) + '</span><span class="acts"><button type="button" data-rs="' + enc + '">Rename</button><button type="button" data-ds="' + enc + '">' + (subArm === x ? "Sure?" : "Delete") + "</button></span></li>";
+    }).join("");
   }
-  function openCatDlg() { catKind = "out"; $("#catNew").value = ""; $("#subNew").value = ""; catMsg(""); renderCatDlg(); if (!catDlg.open) catDlg.showModal(); $("#catNew").focus(); }
-  $("#qaCat").addEventListener("click", openCatDlg);
+  function openCatDlg(kind, cat) {
+    catKind = kind === "in" ? "in" : "out"; subEdit = null; subArm = null; catArm = null;
+    if (cat && !ciFind(CATS[catKind], cat)) { var r = createCat(catKind, cat); cat = r.name || ""; }
+    $("#catNew").value = ""; $("#subNew").value = ""; $("#catRenBox").hidden = true; catMsg("");
+    renderCatDlg(cat || "");
+    if (!catDlg.open) catDlg.showModal(); $("#subNew").focus();
+  }
   $("#catClose").addEventListener("click", function () { catDlg.close(); });
-  $("#catKind").addEventListener("click", function (e) { var b = e.target.closest("[data-ck]"); if (!b) return; catKind = b.getAttribute("data-ck"); catMsg(""); renderCatDlg(); });
-  $("#catParent").addEventListener("change", renderCatDlg);
+  catDlg.addEventListener("close", function () { subChipsAll(); });
+  $("#catKind").addEventListener("click", function (e) { var b = e.target.closest("[data-ck]"); if (!b) return; catKind = b.getAttribute("data-ck"); subEdit = null; subArm = null; catArm = null; $("#catRenBox").hidden = true; catMsg(""); renderCatDlg(""); });
+  $("#catParent").addEventListener("change", function () { subEdit = null; subArm = null; catArm = null; $("#catRenBox").hidden = true; catMsg(""); renderCatDlg(); });
   function addCat() {
-    var name = $("#catNew").value.trim().replace(/\s+/g, " "), k = catKind;
-    if (!name) { catMsg("Type a category name.", true); $("#catNew").focus(); return; }
-    if (ciFind(CATS[k], name)) { catMsg("There is already a " + (k === "in" ? "income" : "expense") + " category called " + ciFind(CATS[k], name) + ".", true); return; }
-    state.cats[k][name] = state.cats[k][name] || []; saveCats();
-    $("#catNew").value = ""; $("#catParent").value = name; renderCatDlg(); catMsg("Added " + name + ". It now shows when you pick a category.");
-    $("#subNew").focus();
+    var r = createCat(catKind, $("#catNew").value);
+    if (r.err) { catMsg(r.err, true); $("#catNew").focus(); return; }
+    $("#catNew").value = ""; renderCatDlg(r.name); catMsg("Added " + r.name + ". It now shows when you pick a category."); $("#subNew").focus();
   }
   function addSub() {
     var name = $("#subNew").value.trim().replace(/\s+/g, " "), k = catKind, parent = $("#catParent").value;
     if (!parent) { catMsg("Pick a category first.", true); return; }
     if (!name) { catMsg("Type a subcategory name.", true); $("#subNew").focus(); return; }
     if (ciFind(CATTREE[k][parent] || [], name)) { catMsg(parent + " already has a subcategory called " + ciFind(CATTREE[k][parent], name) + ".", true); return; }
-    var cu = state.cats[k], key = ciFind(Object.keys(cu), parent) || parent; cu[key] = (cu[key] || []).concat([name]); saveCats();
-    $("#subNew").value = ""; $("#catParent").value = parent; renderCatDlg(); catMsg("Added " + name + " under " + parent + ".");
-    $("#subNew").focus();
+    ensureTree(); state.cats.tree[k][parent].push(name); saveCats();
+    $("#subNew").value = ""; renderCatDlg(parent); catMsg("Added " + name + " under " + parent + "."); $("#subNew").focus();
   }
   $("#catAdd").addEventListener("click", addCat); $("#subAdd").addEventListener("click", addSub);
   $("#catNew").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addCat(); } });
   $("#subNew").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addSub(); } });
-  $("#catMine").addEventListener("click", function (e) {
-    var k = catKind, cu = state.cats[k], c, p;
-    var rc = e.target.closest("[data-rmc]"), rs = e.target.closest("[data-rms]");
-    if (rc) { delete cu[decodeURIComponent(rc.getAttribute("data-rmc"))]; }
-    else if (rs) {
-      p = rs.getAttribute("data-rms").split("|"); c = decodeURIComponent(p[0]); var sb = decodeURIComponent(p[1]);
-      cu[c] = (cu[c] || []).filter(function (x) { return x !== sb; });
-      if (!cu[c].length && ciFind(Object.keys(BASE_TREE[k]), c)) delete cu[c];
-    } else return;
-    saveCats(); renderCatDlg(); catMsg("Removed. Transactions that used it keep their category text.");
+  /* rename / remove a category */
+  $("#catRen").addEventListener("click", function () { var c = $("#catParent").value; if (!c) return; $("#catRenIn").value = c; $("#catRenBox").hidden = false; catMsg(""); $("#catRenIn").focus(); $("#catRenIn").select(); });
+  $("#catRenNo").addEventListener("click", function () { $("#catRenBox").hidden = true; });
+  function saveCatRename() {
+    var k = catKind, old = $("#catParent").value, nw = $("#catRenIn").value.trim().replace(/\s+/g, " ");
+    if (!nw) { catMsg("Type a category name.", true); return; }
+    var clash = ciFind(CATS[k], nw); if (clash && !sameCI(clash, old)) { catMsg("There is already a category called " + clash + ".", true); return; }
+    if (nw === old) { $("#catRenBox").hidden = true; return; }
+    ensureTree(); var t = state.cats.tree[k], nt = {};
+    Object.keys(t).forEach(function (c) { nt[c === old ? nw : c] = t[c]; }); state.cats.tree[k] = nt;
+    var n = retag(k, function (x) { return sameCI(x.cat, old); }, { cat: nw });
+    saveCats(); $("#catRenBox").hidden = true; renderCatDlg(nw);
+    var bud = state.budgets.some(function (u) { return sameCI(u.name, old); });
+    catMsg("Renamed to " + nw + (n ? ". Updated " + n + " past transaction" + (n === 1 ? "" : "s") + "." : ".") + (bud ? " Your budget named " + old + " still uses the old name, so rename it too." : ""));
+  }
+  $("#catRenOk").addEventListener("click", saveCatRename);
+  $("#catRenIn").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveCatRename(); } });
+  $("#catDel").addEventListener("click", function () {
+    var k = catKind, c = $("#catParent").value; if (!c) return;
+    if (catArm !== c) { catArm = c; renderCatDlg(); clearTimeout(catArmT); catArmT = setTimeout(function () { catArm = null; renderCatDlg(); }, 3000); return; }
+    clearTimeout(catArmT); catArm = null; ensureTree(); delete state.cats.tree[k][c]; saveCats(); $("#catRenBox").hidden = true; renderCatDlg("");
+    catMsg("Removed " + c + ". Past transactions keep their category text.");
+  });
+  /* rename / remove a subcategory */
+  function saveSubEdit() {
+    var k = catKind, cat = $("#catParent").value, old = subEdit, inp = $("#catSubs input[data-ri]"); if (old === null || !inp) return;
+    var nw = inp.value.trim().replace(/\s+/g, " ");
+    if (!nw) { catMsg("Type a subcategory name.", true); inp.focus(); return; }
+    var arr = state.cats.tree && state.cats.tree[k] && state.cats.tree[k][cat] ? state.cats.tree[k][cat] : (CATTREE[k][cat] || []);
+    var clash = ciFind(arr, nw); if (clash && !sameCI(clash, old)) { catMsg(cat + " already has a subcategory called " + clash + ".", true); return; }
+    if (nw === old) { subEdit = null; renderCatDlg(); return; }
+    ensureTree(); var a2 = state.cats.tree[k][cat], i = a2.indexOf(old); if (i >= 0) a2[i] = nw;
+    var n = retag(k, function (x) { return sameCI(x.cat, cat) && sameCI(x.sub, old); }, { sub: nw });
+    subEdit = null; saveCats(); renderCatDlg(cat);
+    catMsg("Renamed to " + nw + (n ? ". Updated " + n + " past transaction" + (n === 1 ? "" : "s") + "." : "."));
+  }
+  $("#catSubs").addEventListener("click", function (e) {
+    var k = catKind, cat = $("#catParent").value, b;
+    if ((b = e.target.closest("[data-rs]"))) { subEdit = decodeURIComponent(b.getAttribute("data-rs")); subArm = null; catMsg(""); renderCatDlg(); var i = $("#catSubs input[data-ri]"); if (i) { i.focus(); i.select(); } return; }
+    if (e.target.closest("[data-rno]")) { subEdit = null; renderCatDlg(); return; }
+    if (e.target.closest("[data-rok]")) { saveSubEdit(); return; }
+    if ((b = e.target.closest("[data-ds]"))) {
+      var x = decodeURIComponent(b.getAttribute("data-ds"));
+      if (subArm !== x) { subArm = x; renderCatDlg(); clearTimeout(subArmT); subArmT = setTimeout(function () { subArm = null; renderCatDlg(); }, 3000); return; }
+      clearTimeout(subArmT); subArm = null; ensureTree();
+      state.cats.tree[k][cat] = (state.cats.tree[k][cat] || []).filter(function (y) { return y !== x; });
+      saveCats(); renderCatDlg(cat); catMsg("Removed " + x + ". Past transactions keep their subcategory text.");
+    }
+  });
+  $("#catSubs").addEventListener("keydown", function (e) {
+    if (!e.target.matches("input[data-ri]")) return;
+    if (e.key === "Enter") { e.preventDefault(); saveSubEdit(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); subEdit = null; renderCatDlg(); }
   });
 
   /* ===== Rates ===== */
@@ -3453,7 +3582,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       if (!uid) { useLocal(); return; }
       var base = db.doc("data/users/" + uid + "/wallet");
       state.wcol = base.collection("wallets"); state.col = base.collection("tx"); state.gcol = base.collection("goals"); state.rcol = base.collection("recurring"); pcol = base.collection("prefs");
-      pcol.onSnapshot(function (snap) { snap.docs.forEach(function (d) { if (d.id !== "main") return; var o = d.data() || {}; if (o.budget && CODES.indexOf(o.budget.cur) >= 0) state.budget = { amount: Number(o.budget.amount) || 0, cur: o.budget.cur, goal: Number(o.budget.goal) || 0 }; if (o.rates) CODES.forEach(function (k) { var v = Number(o.rates[k]); if (isFinite(v) && v > 0) state.rates[k] = v; }); if (o.rsrc && o.rsrc.s) state.rsrc = o.rsrc; if (o.eom) state.eom = Object.assign({}, o.eom, state.eom); if (Array.isArray(o.budgets)) state.budgets = o.budgets; if (o.dlayout && Array.isArray(o.dlayout.order) && !dlBusy) state.dl = o.dlayout; if (o.rlayout && Array.isArray(o.rlayout.order)) state.rl = o.rlayout; if (o.clayout && Array.isArray(o.clayout.order)) state.cl = o.clayout; if (o.locks) state.locks = Object.assign({}, state.locks, o.locks); if (o.cats && typeof o.cats === "object") { state.cats = { out: o.cats.out || {}, "in": o.cats["in"] || {} }; applyCats(); } }); prefsReady = true; render(); }, function () {});
+      pcol.onSnapshot(function (snap) { snap.docs.forEach(function (d) { if (d.id !== "main") return; var o = d.data() || {}; if (o.budget && CODES.indexOf(o.budget.cur) >= 0) state.budget = { amount: Number(o.budget.amount) || 0, cur: o.budget.cur, goal: Number(o.budget.goal) || 0 }; if (o.rates) CODES.forEach(function (k) { var v = Number(o.rates[k]); if (isFinite(v) && v > 0) state.rates[k] = v; }); if (o.rsrc && o.rsrc.s) state.rsrc = o.rsrc; if (o.eom) state.eom = Object.assign({}, o.eom, state.eom); if (Array.isArray(o.budgets)) state.budgets = o.budgets; if (o.dlayout && Array.isArray(o.dlayout.order) && !dlBusy) state.dl = o.dlayout; if (o.rlayout && Array.isArray(o.rlayout.order)) state.rl = o.rlayout; if (o.clayout && Array.isArray(o.clayout.order)) state.cl = o.clayout; if (o.locks) state.locks = Object.assign({}, state.locks, o.locks); if (o.cats && typeof o.cats === "object") { state.cats = normCats(o.cats); applyCats(); subChipsAll(); } }); prefsReady = true; render(); }, function () {});
       state.rcol.onSnapshot(function (snap) {
         state.recs = snap.docs.map(function (d) { var o = d.data() || {}; o.id = d.id; return o; }); render();
       }, function () {});
