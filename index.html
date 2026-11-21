@@ -228,7 +228,7 @@ form { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid v
 .wcard .wc { font-size: 12.5px; color: var(--muted); }
 
 .rangebar, .convbar { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end; padding: 14px; }
-.rangebar .field, .convbar .field { width: auto; }
+.rangebar .field, .convbar .field { width: auto; } .rangebar .field[hidden] { display: none; }
 .rangebar input[type="date"], .convbar select { width: auto; }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .dd { position: relative; }
@@ -635,8 +635,8 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   <div id="rangeHost" class="rc">
     <button type="button" class="btn rchip" id="rangeChip" aria-expanded="false" aria-controls="rangeBar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="rangeChipTxt">This month</span><span class="rcaret" aria-hidden="true">▾</span></button>
     <div class="rangebar" id="rangeBar">
-      <div class="field"><label for="rFrom">From</label><input type="date" id="rFrom"></div>
-      <div class="field"><label for="rTo">To</label><input type="date" id="rTo"></div>
+      <div class="field" hidden><label for="rFrom">From</label><input type="date" id="rFrom"></div>
+      <div class="field" hidden><label for="rTo">To</label><input type="date" id="rTo"></div>
       <div class="presets" role="group" aria-label="Quick ranges">
         <button type="button" class="btn sm" data-preset="month" aria-pressed="false">This month</button>
         <button type="button" class="btn sm" data-preset="lastmonth" aria-pressed="false">Last month</button>
@@ -2275,7 +2275,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     Object.keys(RC_NAMES).forEach(function (k) { if (!name && pr[k][0] === from && pr[k][1] === to) name = RC_NAMES[k]; });
     if (!from || !to) txt = "Pick dates";
     else if (name === "All time") txt = name;
-    else { txt = rcFmt(from, from.slice(0, 4) !== to.slice(0, 4)) + " \u2013 " + rcFmt(to, true); if (name) txt = name + " \u00b7 " + txt; }
+    else txt = name || "This month";
     $("#rangeChipTxt").textContent = txt;
   }
   rcChip.addEventListener("click", function (e) { e.stopPropagation(); setRangeOpen(rcHost.classList.contains("rc")); });
