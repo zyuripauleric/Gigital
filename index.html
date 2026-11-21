@@ -626,9 +626,9 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 }
 /* phones: the button row (theme, + Wallet, + Category, layout) hides when you scroll down and slides back in when you scroll up */
 @media (max-width: 699px) {
-  .cur.fl { position: fixed; z-index: 45; top: calc(var(--safe-top, 0px) + 10px); left: calc(max(16px, env(safe-area-inset-left, 0px)) - 6px); right: calc(max(16px, env(safe-area-inset-right, 0px)) - 6px); padding: 6px; border-radius: 22px; background: var(--glass-strong); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); border: 1px solid var(--glass-line); box-shadow: 0 12px 28px -14px rgba(0,0,0,.55); transition: transform .24s ease, opacity .24s ease; }
+  .cur.fl { position: fixed; z-index: 45; top: calc(var(--safe-top, 0px) + 10px); left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) - 6px); padding: 6px; border-radius: 22px; background: var(--glass-strong); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); border: 1px solid var(--glass-line); box-shadow: 0 12px 28px -14px rgba(0,0,0,.55); transition: transform .24s ease, opacity .24s ease; }
   .cur.fl.hide { transform: translateY(calc(-100% - 30px)); opacity: 0; pointer-events: none; }
-  .curSpacer { flex: 1 1 100%; }
+  .curSpacer { flex: none; }
 }
 /* phones: tidy header — equal summary tiles, one bar of same-height controls, even spacing */
 @media (max-width: 699px) {
@@ -645,6 +645,38 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .themesw[aria-checked="true"] .knob { transform: translateX(20px); }
   .themesw svg { width: 18px; height: 18px; }
   .chiprow .rchip, .chiprow > #disp { border-radius: 14px; }
+}
+/* header: "Wallet" title on the left (tap it to customize the layout); theme switch + "+ Wallet" in the top-right corner */
+header.top { align-items: center; gap: 12px; }
+header.top h1 { flex: 1 1 auto; min-width: 0; }
+.wtitle { background: none; border: 0; margin: 0; padding: 4px 0; font: inherit; letter-spacing: inherit; color: inherit; text-align: left; border-radius: 8px; -webkit-tap-highlight-color: transparent; transition: color .15s; }
+.wtitle[aria-pressed="true"] { color: var(--accent); }
+header.top .cur { flex: 0 0 auto; margin-left: auto; justify-content: flex-end; flex-wrap: nowrap; }
+header.top .cur #qaWallet { flex: none; width: auto; padding: 0 16px; white-space: nowrap; }
+header.top .status { flex: 1 1 100%; margin: 0; }
+header.top .status:empty { display: none; }
+header.top .pills { flex: 1 1 100%; margin-top: 0; }
+/* phones: Dashboard / Recurring / Rates become a floating bottom bar (icon above label), in thumb reach */
+@media (max-width: 699px) {
+  body { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .navrow { margin-bottom: -18px; }
+  .navrow .tabs {
+    position: fixed; z-index: 40; left: 50%; transform: translateX(-50%);
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100% - 32px), 420px); max-width: none;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 6px; overflow: visible;
+    border-radius: 26px; border: 1px solid var(--glass-line);
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: inset 0 1px 0 var(--edge), 0 14px 32px -12px rgba(0, 0, 0, 0.6);
+  }
+  .navrow .tabs button {
+    flex-direction: column; justify-content: center; gap: 3px; min-height: 54px; padding: 6px 4px;
+    border-radius: 20px; background: transparent; font-size: 11.5px; line-height: 1.1; letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: transparent; transition: background-color .2s, color .2s;
+  }
+  .navrow .tabs button svg { display: block; width: 22px; height: 22px; }
+  .navrow .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 }
 
 /* category picker + subcategory bubbles */
@@ -686,11 +718,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
 
 <div class="app">
   <header class="top">
-    <div>
-      <h1>Wallet</h1>
-      <p id="status" class="status" role="status">Loading your wallets…</p>
-      <div class="pills" id="pills" aria-label="Snapshot"></div>
-    </div>
+    <h1><button type="button" id="wTitle" class="wtitle" aria-pressed="false" title="Customize layout">Wallet</button></h1>
     <div class="cur">
       <button type="button" class="themesw" id="themeSw" role="switch" aria-checked="false" aria-label="Dark mode">
         <span class="knob" aria-hidden="true">
@@ -699,10 +727,11 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
         </span>
       </button>
       <button type="button" class="btn" id="qaWallet">+ Wallet</button>
-      <button type="button" class="btn icon" id="custHdr" aria-pressed="false" title="Customize layout" aria-label="Customize layout" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       <label class="sr" for="disp">Show amounts in</label>
       <select id="disp"></select>
     </div>
+    <p id="status" class="status" role="status">Loading your wallets…</p>
+    <div class="pills" id="pills" aria-label="Snapshot"></div>
   </header>
 
   <div id="rangeHost" class="rc">
@@ -3490,7 +3519,11 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   });
   $("#dReset").addEventListener("click", function () { state.dl = null; try { localStorage.removeItem("wl-dlayout"); } catch (e) {} syncPrefs(); render(); });
 
-  $("#custHdr").addEventListener("click", function () { if (state.view === "dash") $("#dCust").click(); });
+  /* tapping the "Wallet" title toggles Customize layout (from another tab it jumps to the dashboard first) */
+  $("#wTitle").addEventListener("click", function () {
+    if (state.view !== "dash") { showView("dash"); if (!dEdit) $("#dCust").click(); return; }
+    $("#dCust").click();
+  });
   var VIEWS = { dash: "#dashView", rec: "#recView", rates: "#ratesView" };
   var TABS = { dash: "#tabDash", rec: "#tabRec", rates: "#tabRates" };
   function render() {
@@ -3502,9 +3535,9 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       closeAcctDlg(); cancelWalletEdit();
     }
     $("#monthLabel").textContent = MONTHS[state.m] + " " + state.y;
-    var db = $("#dCust"), ch = $("#custHdr");
+    var db = $("#dCust"), ch = $("#wTitle");
     db.parentNode.parentNode.hidden = db.getAttribute("aria-pressed") !== "true";
-    ch.hidden = state.view !== "dash"; if (state.view === "dash") ch.setAttribute("aria-pressed", db.getAttribute("aria-pressed"));
+    ch.setAttribute("aria-pressed", String(state.view === "dash" && db.getAttribute("aria-pressed") === "true"));
     if (!state.repInit) {
       state.repInit = true; $("#rFrom").value = ds(state.y, state.m, 1); $("#rTo").value = ds(state.y, state.m, new Date(state.y, state.m + 1, 0).getDate());
     }
@@ -3569,7 +3602,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
     try { var b = JSON.parse(localStorage.getItem("wl-tx")); if (Array.isArray(b)) state.tx = b; } catch (e) {}
     try { var g = JSON.parse(localStorage.getItem("wl-goals")); if (Array.isArray(g)) state.goals = g; } catch (e) {}
     try { var rc = JSON.parse(localStorage.getItem("wl-recs")); if (Array.isArray(rc)) state.recs = rc; } catch (e) {}
-    state.loaded = true; prefsReady = true; setStatus("Saved in this browser only."); render();
+    state.loaded = true; prefsReady = true; setStatus(""); render();
   }
   setInterval(function () { var d = new Date(), q = ds(d.getFullYear(), d.getMonth(), d.getDate()); if (q !== todayStr) { var was = state.sel === todayStr; now = d; todayStr = q; if (was) state.sel = q; state.y = d.getFullYear(); state.m = d.getMonth(); render(); } }, 60000);
   showView("dash");
@@ -3613,7 +3646,7 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
       var y = window.scrollY || 0, dy = y - lastY; lastY = y;
       if (!floated) {
         var r = row.getBoundingClientRect();
-        if (y > 0 && r.top <= safe() + TOP && dy > 0) { spacer.style.height = r.height + "px"; spacer.style.display = "block"; floated = true; row.classList.add("fl", "hide"); }
+        if (y > 0 && r.top <= safe() + TOP && dy > 0) { spacer.style.height = r.height + "px"; spacer.style.width = r.width + "px"; spacer.style.display = "block"; floated = true; row.classList.add("fl", "hide"); }
         return;
       }
       if (Math.abs(dy) > 3) row.classList.toggle("hide", dy > 0);
