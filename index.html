@@ -624,13 +624,9 @@ dialog .dlghead { position: sticky; top: -18px; z-index: 6; margin: -18px -20px 
   .chiprow > #disp { flex: 0 0 auto; width: auto; max-width: 42%; min-height: 44px; }
   .chiprow .rchip { padding: 0 12px; gap: 8px; }
 }
-/* phones: the button row (theme, + Wallet, + Category, layout) hides when you scroll down and slides back in when you scroll up */
+/* phones: button size */
 @media (max-width: 699px) {
   :root { --ctl-h: 36px; --fl-pad: 5px; }
-  .cur.fl { position: fixed; z-index: 45; top: calc(var(--safe-top, 0px) + 16px - var(--fl-pad) - 1px); left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) - var(--fl-pad) - 1px); padding: var(--fl-pad); border-radius: calc(var(--ctl-h) / 2 + var(--fl-pad)); background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: none; backdrop-filter: none; border: 1px solid var(--glass-line); box-shadow: 0 10px 24px -14px rgba(0,0,0,.6); transform: translate3d(0,0,0); will-change: transform, opacity; backface-visibility: hidden; transition: transform .24s ease, opacity .24s ease; }
-  .cur.fl.nt { transition: none; }
-  .cur.fl.hide { transform: translate3d(0, calc(-100% - 30px), 0); opacity: 0; pointer-events: none; }
-  .curSpacer { flex: none; }
 }
 /* phones: tidy header — equal summary tiles, one bar of same-height controls, even spacing */
 @media (max-width: 699px) {
@@ -3633,42 +3629,6 @@ header.top .pills { flex: 1 1 100%; margin-top: 0; }
       }, function (e) { clearTimeout(timer); setStatus("Live sync stopped (" + ((e && e.code) || "error") + "). Reload the page to reconnect.", true); });
     });
   }).catch(function () { useLocal(); });
-  /* phones: hide the button row on scroll down, show it again on scroll up */
-  (function () {
-    var row = document.querySelector(".cur"), mq = window.matchMedia("(max-width: 699px)");
-    if (!row) return;
-    var spacer = document.createElement("div"); spacer.className = "curSpacer"; spacer.style.display = "none"; row.parentNode.insertBefore(spacer, row);
-    var probe = document.createElement("div"); probe.style.cssText = "position:fixed;top:0;left:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none"; document.body.appendChild(probe);
-    var floated = false, lastY = window.scrollY || 0, tick = false, TOP = 16, acc = 0, HIDE_AT = 14, SHOW_AT = 10;
-    function safe() { var v = probe.offsetHeight || 0; document.documentElement.style.setProperty("--safe-top", v + "px"); return v; }
-    function unfloat() { if (!floated) return; floated = false; acc = 0; row.classList.remove("fl", "hide", "nt"); spacer.style.display = "none"; }
-    function update() {
-      tick = false;
-      if (!mq.matches || document.body.classList.contains("dlg-lock")) { if (!mq.matches) unfloat(); return; }
-      /* clamp to the real scroll range so iPhone rubber-banding (negative / past-the-end values) cannot flip the direction */
-      var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      var y = Math.min(Math.max(window.scrollY || 0, 0), maxY), dy = y - lastY; lastY = y;
-      if (!dy) return;
-      if (!floated) {
-        var r = row.getBoundingClientRect();
-        if (y > 0 && dy > 0 && r.top <= safe() + TOP) {
-          spacer.style.height = r.height + "px"; spacer.style.width = r.width + "px"; spacer.style.display = "block"; floated = true; acc = 0;
-          /* start hidden without animating, so it does not flash at the top before sliding away */
-          row.classList.add("fl", "hide", "nt");
-          requestAnimationFrame(function () { requestAnimationFrame(function () { row.classList.remove("nt"); }); });
-        }
-        return;
-      }
-      /* keep a running total in one direction; only switch after a real swipe, not a tremor */
-      if ((acc > 0) !== (dy > 0)) acc = 0;
-      acc += dy;
-      if (acc > HIDE_AT) row.classList.add("hide");
-      else if (acc < -SHOW_AT) row.classList.remove("hide");
-      if (spacer.getBoundingClientRect().top >= safe() + TOP) unfloat();
-    }
-    window.addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(update); } }, { passive: true });
-    if (mq.addEventListener) mq.addEventListener("change", function () { if (!mq.matches) unfloat(); }); else mq.addListener(function () { if (!mq.matches) unfloat(); });
-  })();
   /* on phones the currency picker sits next to the date range chip; on wider screens it goes back to the top bar */
   (function () {
     var disp = $("#disp"), row = $("#chipRow"), chip = $("#rangeChip"), cur = disp.parentNode, mq = window.matchMedia("(max-width: 699px)");
