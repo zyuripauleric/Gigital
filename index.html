@@ -589,6 +589,10 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 #acctDlg input, #acctDlg select, #txDlg input, #txDlg select, #recDlg input, #recDlg select, #catDlg input, #catDlg select { min-width: 0; max-width: 100%; }
 dialog input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; width: 100%; text-align: left; }
 body.dlg-lock { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
+/* iOS Safari zooms the page when a focused field's text is under 16px: keep fields at 16px on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+}
 </style>
 <script>
 (function () {
